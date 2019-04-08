@@ -1,6 +1,3 @@
-rasa_nlu_service
-==============================
-
 A short description of the project.
 
 Project Organization

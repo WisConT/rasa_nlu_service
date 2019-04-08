@@ -1,0 +1,20 @@
+slots:
+  PERSON:
+    type: text
+  GPE:
+    type: text
+  LOC:
+    type: text
+  ORG:
+    type: text
+
+
+intents:
+  - greeting
+
+actions:
+  - utter_greeting
+
+templates:
+  utter_greeting:
+    - Hi!
