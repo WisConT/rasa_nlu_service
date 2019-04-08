@@ -1,7 +1,31 @@
 from rasa_nlu.model import Interpreter
 import os
 
-def entities_equal(pred, true, mappings):
+def entities_equal(pred, true, mappings={}):
+    """Check if two entities are equal, also takes an optional mappings dict
+    which maps from a spacy entity name to all possible alternatives in the
+    data set
+
+    NOTE:
+        - ensure the first entity is the spacy predicted entity
+        - ensure the mapping is a dictionary of spacy entity names to arrays of
+          possible alternative entity names in the target data set
+          e.g.:
+
+            mappings = {
+                "gpe": ["location"],
+                "org": ["group", "corporation"]
+            }
+
+    Parameters:
+        pred: the spacy predicted entity
+        true: the ground truth entity from the data set
+        mappings: a dictionary of mappings from spacy entity types to all
+            possible alternatives in the data set (NOTE: lowercase)
+
+    Returns:
+        True/False
+    """
     if pred['entity'].lower() in mappings:
         name_equal = true['entity'].lower() in mappings[pred['entity'].lower()]
     else:
@@ -19,6 +43,20 @@ def entities_equal(pred, true, mappings):
     return (name_equal and value_equal and range_equal) or (name_equal and value_similar and range_similar)
 
 def get_statistics(documents, spacy_labels, mappings):
+    """Given a list of documents in the format given from parse_file functions
+    get the recall, precision and f1 scores for the documents.
+
+    Parameters:
+        documents: list of documents provided by the parse_file function
+        spacy_labels: list of all the spacy entity names to be used, entities
+            that are not in this list will be ignored (NOTE: lowercase)
+        mappings: a dictionary of mappings from spacy entity types to all
+            possible alternatives in the data set (NOTE: lowercase)
+    
+    Returns:
+        (recall, precision, f1)
+
+    """
     print("Calculating corpus statistics...")
 
     dirname = os.path.dirname(__file__)
