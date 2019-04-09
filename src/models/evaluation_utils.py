@@ -11,6 +11,7 @@ from operator import eq
 
 """
 Run crossvalidation with nlu-data.json given trained models using nlu-config.yml
+(Will need to convert data documents to a nlu-data.json/.md format)
 """
 
 dirname = os.path.dirname(__file__)
@@ -21,6 +22,8 @@ def get_match_result(targets, predictions):
     """
     Metric found here:
     http://www.davidsbatista.net/blog/2018/05/09/Named_Entity_Evaluation/
+
+    Needs improvement
     """
     if len(targets) < len(predictions):
         return 2
@@ -42,6 +45,18 @@ def get_match_result(targets, predictions):
 
 
 def align_predictions(targets, predictions, tokens):
+    """
+    Aligns entity predictions to the message tokens. Determines for every token the true label based on the
+    prediction targets and the label assigned (Repurposed from Rasa)
+
+    Parameters:
+        targets: list of target entities
+        predictions: list of predicted entities
+        tokens: original message tokens
+
+    Returns:
+        Dictionary containing the true token labels and token labels
+    """
     true_token_labels = []
     predicted_labels = []
     match_cat = get_match_result(targets, predictions)
@@ -55,6 +70,17 @@ def align_predictions(targets, predictions, tokens):
 
 
 def align_all_predictions(targets, predictions, tokens):
+    """ 
+    Aligns entity predictions to the message tokens for the whole dataset using align_predictions (Repurposed from Rasa)
+
+    Parameters:
+        targets: list of lists of target entities
+        predictions: list of lists of predicted entities
+        tokens: list of original message tokens
+
+    Returns:
+        List of dictionaries containing the true token labels and token labels
+    """
     aligned_predictions = []
     for ts, ps, tks in zip(targets, predictions, tokens):
         aligned_predictions.append(align_predictions(ts, ps, tks))
@@ -62,6 +88,16 @@ def align_all_predictions(targets, predictions, tokens):
 
 
 def evaluate_test_data(interpreter, test_data):
+    """
+    Evaluate test data given a trained interpreter
+
+    Parameters:
+        interpreter: trained interpreter
+        test_data: data to be evaluated
+
+    Returns:
+        JSON object {"json", "err"}
+    """
     entity_results = defaultdict(lambda: defaultdict(list))
     extractors = get_entity_extractors(interpreter)
     entity_predictions, tokens = get_entity_predictions(interpreter, test_data)
@@ -81,16 +117,28 @@ def evaluate_test_data(interpreter, test_data):
     return {"json": json.dumps(aligned_predictions, separators=(',', ':'), indent=4), "err": err}
 
 
-def evaluate_model(data_path, config_path, valid_path):
-    trainer = Trainer(config.load(config_path))
-    data = load_data(data_path)
-    valid = load_data(valid_path)
-    interpreter = trainer.train(data)
-    res = evaluate_test_data(interpreter, valid)
-    return res["err"]
+# def evaluate_model(data_path, config_path, valid_path):
+#     trainer = Trainer(config.load(config_path))
+#     data = load_data(data_path)
+#     valid = load_data(valid_path)
+#     interpreter = trainer.train(data)
+#     res = evaluate_test_data(interpreter, valid)
+#     return res["err"]
 
 
 def crossvalidation(data_path, config_path, folds=10, verbose=False):
+    """
+    Perform cross validation given Rasa NLU data and pipeline configuration
+
+    Parameters:
+        data_path: relative path of Rasa NLU data(.json)
+        config_path: relative path of Rasa NLU pipeline config(.yml)
+        folds: number of folds for cross validation
+        verbose: if True, print out test data evaluation for each fold
+
+    Returns:
+        None
+    """
     tmp_dir = tempfile.mkdtemp()
     trainer = Trainer(config.load(config_path))
     data = load_data(data_path)
@@ -105,18 +153,30 @@ def crossvalidation(data_path, config_path, folds=10, verbose=False):
         print("result: " + res["json"])
         print("error: " + str(res["err"]))
     shutil.rmtree(tmp_dir, ignore_errors=True)
-    print(err/folds)
+    print("Average error: " + str(err/folds))
 
 
-def evaluate(data_path, config_path):
+def evaluate(data_path, config_path, sample_string):
+    """
+    Evaluate sample_string given model derived from Rasa NLU data and pipeline configuration
+
+    Parameters:
+        data_path: relative path of Rasa NLU data(.json)
+        config_path: relative path of Rasa NLU pipeline config(.yml)
+        sample_string: string to be evaluated
+
+    Returns:
+        None
+    """
     trainer = Trainer(config.load(config_path))
     data = load_data(data_path)
     interpreter = trainer.train(data)
-    # parses provided input and gives intent classification
-    raw = interpreter.parse(u"Australia is a country")
+    raw = interpreter.parse(sample_string)
     print(json.dumps(raw, separators=(',', ':'), indent=4))
 
 
-crossvalidation(data_dir + "/jason-nlu-data.json",
-                data_dir + "/nlu-config.yml", verbose=True)
-#evaluate("./data/jason-nlu-data.json", "./data/nlu-config.yml")
+if __name__ == "__main__":
+    crossvalidation(data_dir + "/jason-nlu-data.json",
+                    data_dir + "/nlu-config.yml", verbose=True)
+    # evaluate(data_dir + "/jason-nlu-data.json",
+    #          data_dir + "/nlu-config.yml", "This is America")
