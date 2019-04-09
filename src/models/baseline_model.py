@@ -8,9 +8,9 @@ def entities_equal(pred, true, mappings={}):
     data set
 
     NOTE:
-        - ensure the first entity is the spacy predicted entity
-        - ensure the mapping is a dictionary of spacy entity names to arrays of
-          possible alternative entity names in the target data set
+        - ensure pred is the spacy predicted entity
+        - ensure the mapping is a dictionary of (lowercase) spacy entity names
+          to arrays of possible alternative entity names in the target data set
           e.g.:
 
             mappings = {
