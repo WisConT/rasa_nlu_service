@@ -1,11 +1,12 @@
-from data.make_dataset_conll import parse_file
-from baseline_model import get_statistics
 import sys
 import os
 
-dirname = os.path.dirname(__file__)
-filename = os.path.join(dirname, '../')
-sys.path.append(filename)
+dirname = os.path.dirname(__file__)  # NOQA: E402
+filename = os.path.join(dirname, '../')  # NOQA: E402
+sys.path.append(filename)  # NOQA: E402
+
+from data.make_dataset_conll import parse_file
+from baseline_model import get_statistics
 
 documents = parse_file(os.path.join(
     dirname, '../../data/external/conll_2003/test.txt'))
