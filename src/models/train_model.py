@@ -16,11 +16,13 @@ from rasa_core.agent import Agent
 from rasa_core.policies.keras_policy import KerasPolicy
 from rasa_core.policies.memoization import MemoizationPolicy
 
+
 def train_nlu():
     dirname = os.path.dirname(__file__)
 
     training_data = load_data(os.path.join(dirname, 'data/nlu-data.md'))
-    trainer = Trainer(config.load(os.path.join(dirname, 'data/nlu-config.yml')))
+    trainer = Trainer(config.load(
+        os.path.join(dirname, 'data/nlu-config.yml')))
     trainer.train(training_data)
 
     model_path = os.path.join(dirname, '../../models/nlu/')
@@ -28,11 +30,15 @@ def train_nlu():
 
     return model_directory
 
+
 def train_dialogue(domain_file=None, model_path=None, training_data_file=None):
     dirname = os.path.dirname(__file__)
-    domain_file = os.path.join(dirname, 'data/domain.yml') if domain_file == None else domain_file
-    model_path = os.path.join(dirname, '../../models/dialogue') if model_path == None else model_path
-    training_data_file = os.path.join(dirname, 'data/stories.md') if training_data_file == None else training_data_file
+    domain_file = os.path.join(
+        dirname, 'data/domain.yml') if domain_file == None else domain_file
+    model_path = os.path.join(
+        dirname, '../../models/dialogue') if model_path == None else model_path
+    training_data_file = os.path.join(
+        dirname, 'data/stories.md') if training_data_file == None else training_data_file
 
     agent = Agent(
         domain_file,
@@ -45,10 +51,12 @@ def train_dialogue(domain_file=None, model_path=None, training_data_file=None):
 
     return agent
 
+
 def train_all():
     model_directory = train_nlu()
     agent = train_dialogue()
     return [model_directory, agent]
+
 
 if __name__ == "__main__":
     warnings.filterwarnings(action='ignore', category=DeprecationWarning)

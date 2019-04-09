@@ -1,6 +1,8 @@
 from data.make_dataset import add_entities
 
 # parses the conll file into a formatted array
+
+
 def parse_file(filename='test.txt'):
     print("Parsing file...")
 
@@ -34,13 +36,13 @@ def parse_file(filename='test.txt'):
                     document = []
 
                 continue
-            
+
             if len(sentence['words']) != 0:
                 sentence['full_text'] = sentence['full_text'] + ' '
 
             sentence['words'].append(split_line[0])
             sentence['tags'].append(split_line[3])
             sentence['full_text'] = sentence['full_text'] + split_line[0]
-        
+
         print("File parsed")
         return add_entities(documents)

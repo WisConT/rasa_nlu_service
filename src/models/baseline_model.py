@@ -1,6 +1,7 @@
 from rasa_nlu.model import Interpreter
 import os
 
+
 def entities_equal(pred, true, mappings={}):
     """Check if two entities are equal, also takes an optional mappings dict
     which maps from a spacy entity name to all possible alternatives in the
@@ -42,6 +43,7 @@ def entities_equal(pred, true, mappings={}):
 
     return (name_equal and value_equal and range_equal) or (name_equal and value_similar and range_similar)
 
+
 def get_statistics(documents, spacy_labels, mappings):
     """Given a list of documents in the format given from parse_file functions
     get the recall, precision and f1 scores for the documents.
@@ -52,7 +54,7 @@ def get_statistics(documents, spacy_labels, mappings):
             that are not in this list will be ignored (NOTE: lowercase)
         mappings: a dictionary of mappings from spacy entity types to all
             possible alternatives in the data set (NOTE: lowercase)
-    
+
     Returns:
         (recall, precision, f1)
 
@@ -99,12 +101,15 @@ def get_statistics(documents, spacy_labels, mappings):
                     if entities_equal(predicted_entity, true_entity, mappings):
                         found = True
                         break
-                
+
                 if not found:
                     false_negative = false_negative + 1
-    
-    recall = true_positive / (true_positive + false_negative) if (true_positive + false_negative) > 0 else 0
-    precision = true_positive / (true_positive + false_positive) if (true_positive + false_positive) > 0 else 0
-    f1 = (2 * precision * recall) / (precision + recall) if (precision + recall) > 0 else 0
+
+    recall = true_positive / \
+        (true_positive + false_negative) if (true_positive + false_negative) > 0 else 0
+    precision = true_positive / \
+        (true_positive + false_positive) if (true_positive + false_positive) > 0 else 0
+    f1 = (2 * precision * recall) / (precision +
+                                     recall) if (precision + recall) > 0 else 0
 
     return (recall, precision, f1)
