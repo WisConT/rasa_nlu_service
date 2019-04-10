@@ -8,6 +8,7 @@ import tempfile
 import json
 import os
 from operator import eq
+from baseline_model import entities_equal
 
 """
 Run crossvalidation with nlu-data.json given trained models using nlu-config.yml
@@ -19,29 +20,75 @@ data_dir = os.path.join(dirname, './data')
 
 
 def get_match_result(targets, predictions):
-    """
-    Metric found here:
-    http://www.davidsbatista.net/blog/2018/05/09/Named_Entity_Evaluation/
+    wnut_mappings = {
+        "gpe": ["location"],
+        "loc": ["location"],
+        "fac": ["location"],
+        "org": ["group", "corporation"],
+        "norp": ["group"],
+        "work_of_art": ["creative-work"],
+        "person": ["person"],
+        "product": ["product"],
+        "event": ["o"],
+        "law": ["o"],
+        "language": ["o"],
+        "date": ["o"],
+        "time": ["o"],
+        "percent": ["o"],
+        "money": ["o"],
+        "quantity": ["o"],
+        "ordinal": ["o"],
+        "cardinal": ["o"],
+        "o": ["o"]
+    }
 
-    Needs improvement
-    """
-    if len(targets) < len(predictions):
-        return 2
-    elif len(targets) > len(predictions):
-        return 3
-    ent_match = True
-    loc_match = True
-    for t, p in zip(targets, predictions):
-        ent_match = t["entity"] == p["entity"] and ent_match
-        loc_match = t["start"] == p["start"] and t["end"] == p["end"] and loc_match
-    if ent_match and loc_match:
-        return 1
-    elif ent_match:
-        return 5
-    elif loc_match:
-        return 4
-    else:
-        return 6
+    conll_mappings = {
+        "gpe": ["loc"],
+        "loc": ["loc"],
+        "fac": ["loc"],
+        "org": ["org"],
+        "norp": ["o"],
+        "work_of_art": ["o"],
+        "person": ["per"],
+        "product": ["o"],
+        "event": ["o"],
+        "law": ["o"],
+        "language": ["o"],
+        "date": ["o"],
+        "time": ["o"],
+        "percent": ["o"],
+        "money": ["o"],
+        "quantity": ["o"],
+        "ordinal": ["o"],
+        "cardinal": ["o"],
+        "o": ["o"]
+    }
+    return all([t.lower() in wnut_mappings[p.lower()] for t, p in zip(targets, predictions)])
+
+# def get_match_result(targets, predictions):
+#     """
+#     Metric found here:
+#     http://www.davidsbatista.net/blog/2018/05/09/Named_Entity_Evaluation/
+
+#     Needs improvement
+#     """
+#     if len(targets) < len(predictions):
+#         return 2
+#     elif len(targets) > len(predictions):
+#         return 3
+#     ent_match = True
+#     loc_match = True
+#     for t, p in zip(targets, predictions):
+#         ent_match = t["entity"] == p["entity"] and ent_match
+#         loc_match = t["start"] == p["start"] and t["end"] == p["end"] and loc_match
+#     if ent_match and loc_match:
+#         return 1
+#     elif ent_match:
+#         return 5
+#     elif loc_match:
+#         return 4
+#     else:
+#         return 6
 
 
 def align_predictions(targets, predictions, tokens):
@@ -59,18 +106,19 @@ def align_predictions(targets, predictions, tokens):
     """
     true_token_labels = []
     predicted_labels = []
-    match_cat = get_match_result(targets, predictions)
 
     for t in tokens:
         true_token_labels.append(determine_token_labels(t, targets, None))
         extracted = determine_token_labels(t, predictions, None)
         predicted_labels.append(extracted)
 
+    match_cat = get_match_result(true_token_labels, predicted_labels)
+
     return {"target_labels": true_token_labels, "predicted_labels": predicted_labels, "match_cat": match_cat}
 
 
 def align_all_predictions(targets, predictions, tokens):
-    """ 
+    """
     Aligns entity predictions to the message tokens for the whole dataset using align_predictions (Repurposed from Rasa)
 
     Parameters:
@@ -108,22 +156,14 @@ def evaluate_test_data(interpreter, test_data):
     entity_targets = get_entity_targets(test_data)
     aligned_predictions = align_all_predictions(
         entity_targets, entity_predictions, tokens)
-    err = 1 - sum([aligned_predictions[i]["match_cat"] == 1
+    print(align_predictions)
+    err = 1 - sum([aligned_predictions[i]["match_cat"]
                    for i in range(0, len(aligned_predictions))])/len(aligned_predictions)
 
     for i, td in enumerate(test_data.training_examples):
         aligned_predictions[i]["text"] = td.text
 
     return {"json": json.dumps(aligned_predictions, separators=(',', ':'), indent=4), "err": err}
-
-
-# def evaluate_model(data_path, config_path, valid_path):
-#     trainer = Trainer(config.load(config_path))
-#     data = load_data(data_path)
-#     valid = load_data(valid_path)
-#     interpreter = trainer.train(data)
-#     res = evaluate_test_data(interpreter, valid)
-#     return res["err"]
 
 
 def crossvalidation(data_path, config_path, folds=10, verbose=False):
@@ -176,7 +216,7 @@ def evaluate(data_path, config_path, sample_string):
 
 
 if __name__ == "__main__":
-    crossvalidation(data_dir + "/jason-nlu-data.json",
-                    data_dir + "/nlu-config.yml", verbose=True)
+    crossvalidation(data_dir + "/wnut-nlu-data.json",
+                    data_dir + "/nlu-config.yml", folds=2, verbose=True)
     # evaluate(data_dir + "/jason-nlu-data.json",
     #          data_dir + "/nlu-config.yml", "This is America")
