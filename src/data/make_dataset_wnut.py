@@ -1,3 +1,4 @@
+import os
 from data.make_dataset import add_entities
 
 # parses the conll file into a formatted array
@@ -49,4 +50,15 @@ def parse_file(filename):
         # remove all sentences that contain a @mention
         # documents = list(filter(lambda d: "@" not in d[0]['words'], documents))
 
-        return add_entities(documents)
+        documents = list(map(lambda doc: add_entities(doc), documents))
+
+        return documents
+
+
+def get_dataset():
+    print("Fetching dataset...")
+
+    dirname = os.path.dirname(__file__)  # NOQA: E402
+
+    return parse_file(os.path.join(
+        dirname, '../../data/interim/wnut_2017/test.txt'))

@@ -5,12 +5,10 @@ dirname = os.path.dirname(__file__)  # NOQA: E402
 filename = os.path.join(dirname, '../')  # NOQA: E402
 sys.path.append(filename)  # NOQA: E402
 
-from data.make_dataset_wnut import parse_file
+from data.make_dataset_wnut import get_dataset
 from baseline_model import get_statistics
 
-
-documents = parse_file(os.path.join(
-    dirname, '../../data/external/wnut_2017/test.txt'))
+documents = get_dataset()
 
 spacy_labels = ['person', 'org', 'gpe', 'loc', 'product', 'work_of_art']
 # wnut_labels = ['corporation', 'creative-work', 'group', 'location', 'person', 'product']

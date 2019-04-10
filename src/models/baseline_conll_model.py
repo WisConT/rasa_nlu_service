@@ -5,11 +5,10 @@ dirname = os.path.dirname(__file__)  # NOQA: E402
 filename = os.path.join(dirname, '../')  # NOQA: E402
 sys.path.append(filename)  # NOQA: E402
 
-from data.make_dataset_conll import parse_file
+from data.make_dataset_conll import get_dataset
 from baseline_model import get_statistics
 
-documents = parse_file(os.path.join(
-    dirname, '../../data/external/conll_2003/test.txt'))
+documents = get_dataset()
 
 spacy_labels = ['person', 'org', 'gpe', 'loc']
 # conll_labels = ['per', 'org', 'loc']

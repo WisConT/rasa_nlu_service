@@ -44,14 +44,15 @@ def entities_equal(pred, true, mappings={}):
     return (name_equal and value_equal and range_equal) or (name_equal and value_similar and range_similar)
 
 
-def get_statistics(documents, spacy_labels, mappings):
+def get_statistics(documents, spacy_labels=None, mappings={}):
     """Given a list of documents in the format given from parse_file functions
     get the recall, precision and f1 scores for the documents.
 
     Parameters:
         documents: list of documents provided by the parse_file function
         spacy_labels: list of all the spacy entity names to be used, entities
-            that are not in this list will be ignored (NOTE: lowercase)
+            that are not in this list will be ignored, do not pass a value and
+            all labels will be used (NOTE: lowercase)
         mappings: a dictionary of mappings from spacy entity types to all
             possible alternatives in the data set (NOTE: lowercase)
 
@@ -77,7 +78,7 @@ def get_statistics(documents, spacy_labels, mappings):
             result = interpreter.parse(sentence['full_text'])
 
             for predicted_entity in result['entities']:
-                if predicted_entity['entity'].lower() not in spacy_labels:
+                if spacy_labels is not None and predicted_entity['entity'].lower() not in spacy_labels:
                     continue
 
                 found = False
@@ -92,7 +93,7 @@ def get_statistics(documents, spacy_labels, mappings):
                     false_positive = false_positive + 1
 
             for true_entity in sentence['entities']:
-                if predicted_entity['entity'].lower() not in spacy_labels:
+                if spacy_labels is not None and predicted_entity['entity'].lower() not in spacy_labels:
                     continue
 
                 found = False

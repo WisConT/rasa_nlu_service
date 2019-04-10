@@ -1,9 +1,10 @@
+import os
 from data.make_dataset import add_entities
 
 # parses the conll file into a formatted array
 
 
-def parse_file(filename='test.txt'):
+def parse_file(filename):
     print("Parsing file...")
 
     with open(filename, 'r') as f:
@@ -45,4 +46,16 @@ def parse_file(filename='test.txt'):
             sentence['full_text'] = sentence['full_text'] + split_line[0]
 
         print("File parsed")
-        return add_entities(documents)
+        
+        documents = list(map(lambda doc: add_entities(doc), documents))
+
+        return documents
+
+
+def get_dataset():
+    print("Fetching dataset...")
+
+    dirname = os.path.dirname(__file__)  # NOQA: E402
+
+    return parse_file(os.path.join(
+        dirname, '../../data/interim/conll_2003/test.txt'))
