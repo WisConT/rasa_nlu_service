@@ -16,7 +16,7 @@ Run crossvalidation with nlu-data.json given trained models using nlu-config.yml
 """
 
 dirname = os.path.dirname(__file__)
-data_dir = os.path.join(dirname, './data')
+data_dir = os.path.join(dirname, './resources')
 
 
 def get_match_result(targets, predictions):
@@ -129,10 +129,17 @@ def align_all_predictions(targets, predictions, tokens):
     Returns:
         List of dictionaries containing the true token labels and token labels
     """
-    aligned_predictions = []
+    prediction_per_document = []
+    concat_targets = []
+    concat_predictions = []
+
     for ts, ps, tks in zip(targets, predictions, tokens):
-        aligned_predictions.append(align_predictions(ts, ps, tks))
-    return aligned_predictions
+        aligned_json = align_predictions(ts, ps, tks)
+        prediction_per_document.append(aligned_json)
+        concat_targets = concat_targets + aligned_json["target_labels"]
+        concat_predictions = concat_predictions + \
+            aligned_json["predicted_labels"]
+    return prediction_per_document
 
 
 def evaluate_test_data(interpreter, test_data):
@@ -156,7 +163,6 @@ def evaluate_test_data(interpreter, test_data):
     entity_targets = get_entity_targets(test_data)
     aligned_predictions = align_all_predictions(
         entity_targets, entity_predictions, tokens)
-    print(align_predictions)
     err = 1 - sum([aligned_predictions[i]["match_cat"]
                    for i in range(0, len(aligned_predictions))])/len(aligned_predictions)
 
