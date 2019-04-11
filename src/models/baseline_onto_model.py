@@ -1,5 +1,6 @@
 import sys
 import os
+import json
 
 dirname = os.path.dirname(__file__)  # NOQA: E402
 filename = os.path.join(dirname, '../')  # NOQA: E402
@@ -10,8 +11,7 @@ from baseline_model import get_statistics, entities_equal
 
 documents = get_dataset()
 
-(recall, precision, f1) = get_statistics(documents)
+statistics = get_statistics(documents)
 
-print("recall: " + str(recall))
-print("precision: " + str(precision))
-print("f1: " + str(f1))
+print("statistics: ")
+print(json.dumps(statistics, indent=4))

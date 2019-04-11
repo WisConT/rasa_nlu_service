@@ -7,6 +7,7 @@ sys.path.append(filename)  # NOQA: E402
 
 from data.make_dataset_wnut import get_dataset
 from baseline_model import get_statistics
+import json
 
 documents = get_dataset()
 
@@ -20,8 +21,7 @@ mappings = {
     "work_of_art": ["creative-work"]
 }
 
-(recall, precision, f1) = get_statistics(documents, spacy_labels, mappings)
+statistics = get_statistics(documents, spacy_labels, mappings)
 
-print("recall: " + str(recall))
-print("precision: " + str(precision))
-print("f1: " + str(f1))
+print("statistics: ")
+print(json.dumps(statistics, indent=4))

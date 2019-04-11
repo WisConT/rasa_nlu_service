@@ -1,5 +1,6 @@
 import sys
 import os
+import json
 
 dirname = os.path.dirname(__file__)  # NOQA: E402
 filename = os.path.join(dirname, '../')  # NOQA: E402
@@ -18,8 +19,7 @@ mappings = {
     "person": ["per"]
 }
 
-(recall, precision, f1) = get_statistics(documents, spacy_labels, mappings)
+statistics = get_statistics(documents, spacy_labels, mappings)
 
-print("recall: " + str(recall))
-print("precision: " + str(precision))
-print("f1: " + str(f1))
+print("statistics: ")
+print(json.dumps(statistics, indent=4))

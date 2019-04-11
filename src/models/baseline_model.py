@@ -1,4 +1,5 @@
 from rasa_nlu.model import Interpreter
+from functools import reduce
 import os
 
 
@@ -27,6 +28,7 @@ def entities_equal(pred, true, mappings={}):
     Returns:
         True/False
     """
+
     if pred['entity'].lower() in mappings:
         name_equal = true['entity'].lower() in mappings[pred['entity'].lower()]
     else:
@@ -42,6 +44,53 @@ def entities_equal(pred, true, mappings={}):
         true['start'] <= pred['start'] and true['end'] >= pred['end']
 
     return (name_equal and value_equal and range_equal) or (name_equal and value_similar and range_similar)
+
+
+def increment_field(statistics, entity, field):
+    if entity not in statistics:
+        statistics[entity] = {
+            'true_positive': 0,
+            'false_positive': 0,
+            'false_negative': 0
+        }
+    
+    statistics[entity][field] += 1
+
+    return statistics
+
+
+def calculate_statistics(statistics):
+    # also calculate stats for total corpus
+    statistics['corpus_total'] = {
+        'true_positive': reduce(lambda x, v: x + v['true_positive'], statistics.values(), 0),
+        'false_positive': reduce(lambda x, v: x + v['false_positive'], statistics.values(), 0),
+        'false_negative': reduce(lambda x, v: x + v['false_negative'], statistics.values(), 0)
+    }
+
+    for entity in statistics:
+        entity_stats = statistics[entity]
+
+        tp_fn = entity_stats['true_positive'] + entity_stats['false_negative']
+        tp_fp = entity_stats['true_positive'] + entity_stats['false_positive']
+
+        if tp_fn > 0:
+            entity_stats['recall'] = entity_stats['true_positive'] / tp_fn
+        else:
+            entity_stats['recall'] = 0
+        
+        if tp_fp > 0:
+            entity_stats['precision'] = entity_stats['true_positive'] / tp_fp
+        else:
+            entity_stats['precision'] = 0
+
+        pr_re = entity_stats['precision'] + entity_stats['recall']
+
+        if pr_re > 0:
+            entity_stats['f1'] = (2 * entity_stats['precision'] * entity_stats['recall']) / pr_re
+        else:
+            entity_stats['f1'] = 0
+    
+    return statistics
 
 
 def get_statistics(documents, spacy_labels=None, mappings={}):
@@ -66,9 +115,7 @@ def get_statistics(documents, spacy_labels=None, mappings={}):
     model_path = os.path.join(dirname, '../../models/nlu/default/current')
     interpreter = Interpreter.load(model_path)
 
-    true_positive = 0
-    false_positive = 0
-    false_negative = 0
+    statistics = {}
 
     for i in range(len(documents)):
         print("doc: " + str(i + 1) + "/" + str(len(documents)))
@@ -82,15 +129,23 @@ def get_statistics(documents, spacy_labels=None, mappings={}):
                     continue
 
                 found = False
+                entity_name = predicted_entity['entity']
 
                 for true_entity in sentence['entities']:
                     if entities_equal(predicted_entity, true_entity, mappings):
                         found = True
+                        entity_name = true_entity['entity']
+                        break
+
+                # if there is only one possible mapping, use that mapping for
+                # statistics
+                if entity_name.lower() in mappings and len(mappings[entity_name.lower()]) == 1:
+                    entity_name = mappings[entity_name.lower()][0]
 
                 if found:
-                    true_positive = true_positive + 1
+                    statistics = increment_field(statistics, entity_name.lower(), 'true_positive')
                 else:
-                    false_positive = false_positive + 1
+                    statistics = increment_field(statistics, entity_name.lower(), 'false_positive')
 
             for true_entity in sentence['entities']:
                 if spacy_labels is not None and predicted_entity['entity'].lower() not in spacy_labels:
@@ -104,13 +159,9 @@ def get_statistics(documents, spacy_labels=None, mappings={}):
                         break
 
                 if not found:
-                    false_negative = false_negative + 1
+                    statistics = increment_field(statistics, true_entity['entity'].lower(), 'false_negative')
 
-    recall = true_positive / \
-        (true_positive + false_negative) if (true_positive + false_negative) > 0 else 0
-    precision = true_positive / \
-        (true_positive + false_positive) if (true_positive + false_positive) > 0 else 0
-    f1 = (2 * precision * recall) / (precision +
-                                     recall) if (precision + recall) > 0 else 0
+    # calculate precision, recall, f1
+    statistics = calculate_statistics(statistics)
 
-    return (recall, precision, f1)
+    return statistics
