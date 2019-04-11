@@ -24,7 +24,7 @@ def add_entities(document):
 
                 # count keeps track of index in the string
                 count = count + (0 if i == len(words) -
-                                    1 else 1) + len(word)
+                                 1 else 1) + len(word)
 
                 # find any further tags that relate to the current tag
                 # (start with I)
@@ -38,7 +38,7 @@ def add_entities(document):
 
                     # count keeps track of index in the string
                     count = count + (0 if i == len(words) -
-                                        1 else 1) + len(words[j])
+                                     1 else 1) + len(words[j])
                     j = j + 1
 
                 # skip over the tags weve just parsed
@@ -49,7 +49,7 @@ def add_entities(document):
             else:
                 # count keeps track of index in the string
                 count = count + (0 if i == len(words) -
-                                    1 else 1) + len(word)
+                                 1 else 1) + len(word)
 
                 # no entity here, continue
                 i = i + 1
