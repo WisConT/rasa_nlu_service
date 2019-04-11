@@ -1,4 +1,105 @@
-A short description of the project.
+# Chatbot Project
+
+## Data Organisation
+
+### OntoNotes 5.0
+
+Steps to import data:
+1. After downloading the OntoNotes 5.0 data set, copy the folder `data/files/data` from the data set and paste it in the `data/external` folder in this project.
+2. Rename the directory `onto5`.
+3. Run `python3 src/data/clean_dataset_onto.py` to convert the data to the desired format. This will create a formatted copy of the data in `data/interim`.
+4. You will now be able to run `python3 src/models/baseline_onto_model.py` with the formatted data.
+
+Example of formatted data:
+
+```
+With	O
+their	O
+unique	O
+charm	O
+,	O
+these	O
+well	O
+-	O
+known	O
+cartoon	O
+images	O
+once	O
+again	O
+caused	O
+Hong	B-GPE
+Kong	I-GPE
+to	O
+be	O
+a	O
+focus	O
+of	O
+worldwide	O
+attention	O
+.	O
+```
+
+### CoNLL 2003
+
+The WNUT data should be a tsv of four columns, the first is the tokens and the fourth is the entity classification. It should be saved in a file in this location `data/interim/conll_2003/test.txt`. Example format:
+
+```
+Japan NNP B-NP B-LOC
+began VBD B-VP O
+the DT B-NP O
+defence NN I-NP O
+of IN B-PP O
+their PRP$ B-NP O
+Asian JJ I-NP B-MISC
+Cup NNP I-NP I-MISC
+title NN I-NP O
+with IN B-PP O
+a DT B-NP O
+lucky JJ I-NP O
+2-1 CD I-NP O
+win VBP B-VP O
+against IN B-PP O
+Syria NNP B-NP B-LOC
+in IN B-PP O
+a DT B-NP O
+Group NNP I-NP O
+C NNP I-NP O
+championship NN I-NP O
+match NN I-NP O
+on IN B-PP O
+Friday NNP B-NP O
+. . O O
+```
+
+### WNUT2017
+
+The WNUT data should be a tsv of two columns, the first is the tokens and the second is the entity classification. It should be saved in a file in this location `data/interim/wnut_2017/test.txt`. Example format:
+
+```
+The	O
+soldier	O
+was	O
+killed	O
+when	O
+another	O
+avalanche	O
+hit	O
+an	O
+army	O
+barracks	O
+in	O
+the	O
+northern	O
+area	O
+of	O
+Sonmarg	B-location
+,	O
+said	O
+a	O
+military	O
+spokesman	O
+.	O
+```
 
 Project Organization
 ------------
