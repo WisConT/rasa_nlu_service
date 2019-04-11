@@ -6,8 +6,8 @@
 
 Steps to import data:
 1. After downloading the OntoNotes 5.0 data set, copy the folder `data/files/data` from the data set and paste it in the `data/external` folder in this project.
-2. Rename the directory `onto5`.
-3. Run `python3 src/data/clean_dataset_onto.py` to convert the data to the desired format. This will create a formatted copy of the data in `data/interim`.
+2. Rename the directory `onto5` in the project.
+3. Run `python3 src/data/clean_dataset_onto.py` to convert the data to the desired format. This will create a formatted copy of the data in `data/interim/onto5`.
 4. You will now be able to run `python3 src/models/baseline_onto_model.py` with the formatted data.
 
 Example of formatted data:
@@ -41,7 +41,7 @@ attention	O
 
 ### CoNLL 2003
 
-The WNUT data should be a tsv of four columns, the first is the tokens and the fourth is the entity classification. It should be saved in a file in this location `data/interim/conll_2003/test.txt`. Example format:
+The CoNLL data should be a space separated value file of four columns, the first is the tokens and the fourth is the entity classification. It should be saved in a file in this location `data/interim/conll_2003/test.txt`. Example format:
 
 ```
 Japan NNP B-NP B-LOC

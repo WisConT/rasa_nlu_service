@@ -119,7 +119,7 @@ def clean_dataset():
             abs_path = os.path.abspath(dirname)
             sub_path = abs_path.split('onto5/english/annotations/', 1)[1]
             new_dir = os.path.join(output_loc, sub_path)
-            
+
             if not os.path.exists(new_dir):
                 os.makedirs(new_dir)
 
