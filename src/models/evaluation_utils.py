@@ -8,7 +8,6 @@ import tempfile
 import json
 import os
 from operator import eq
-from baseline_model import entities_equal
 
 """
 Run crossvalidation with nlu-data.json given trained models using nlu-config.yml
@@ -16,7 +15,8 @@ Run crossvalidation with nlu-data.json given trained models using nlu-config.yml
 """
 
 dirname = os.path.dirname(__file__)
-data_dir = os.path.join(dirname, './resources')
+nlu_data_dir = os.path.join(dirname, '../../data/processed')
+nlu_resources_dir = os.path.join(dirname, './resources')
 
 # MANY TO ONE MAPPING FOR WNUT
 # spacy -> wnut
@@ -188,7 +188,8 @@ def evaluate_test_data(interpreter, test_data):
 
 def crossvalidation(data_path, config_path, folds=10, verbose=False):
     """
-    Perform cross validation given Rasa NLU data and pipeline configuration
+    Perform cross validation given Rasa NLU data and pipeline configuration,
+    printing f1 scores per entity
 
     Parameters:
         data_path: relative path of Rasa NLU data(.json)
@@ -204,19 +205,44 @@ def crossvalidation(data_path, config_path, folds=10, verbose=False):
     data = load_data(data_path)
     # err = 0
     for idx, (train, test) in enumerate(generate_folds(folds, data)):
+        print("Training model with training data")
         interpreter = trainer.train(train)
+        print("Evaluating test data with trained model")
         res = evaluate_test_data(interpreter, test)
         # err = err + res["err"]
         if not verbose:
             continue
         print("fold: " + str(idx))
-        #print("result: " + res["json"])
+        # print("result: " + res["json"])
         print("statistics: " + str(res["stats"]))
     shutil.rmtree(tmp_dir, ignore_errors=True)
     # print("Average error: " + str(err/folds))
 
 
-def evaluate(data_path, config_path, sample_string):
+def evaluate(train_data_path, config_path, test_data_path):
+    """
+    Evaluate test data given model derived from Rasa NLU training data and pipeline configuration,
+    printing f1 scores per entity
+
+    Parameters:
+        train_data_path: relative path of Rasa NLU training data(.json)
+        config_path: relative path of Rasa NLU pipeline config(.yml)
+        test_data_path: relative path of Rasa NLU test data(.json)
+
+    Returns:
+        None
+    """
+    trainer = Trainer(config.load(config_path))
+    train_data = load_data(train_data_path)
+    test_data = load_data(test_data_path)
+    print("Training model with training data")
+    interpreter = trainer.train(train_data)
+    print("Evaluating test data with trained model")
+    res = evaluate_test_data(interpreter, test_data)
+    print("statistics: " + str(res["stats"]))
+
+
+def evaluate_string(data_path, config_path, sample_string):
     """
     Evaluate sample_string given model derived from Rasa NLU data and pipeline configuration
 
@@ -236,7 +262,10 @@ def evaluate(data_path, config_path, sample_string):
 
 
 if __name__ == "__main__":
-    crossvalidation(data_dir + "/wnut-nlu-data.json",
-                    data_dir + "/nlu-config.yml", folds=2, verbose=True)
-    # evaluate(data_dir + "/jason-nlu-data.json",
-    #          data_dir + "/nlu-config.yml", "This is America")
+    # crossvalidation(nlu_data_dir + "/wnut_2017/wnut-train-nlu-data.json",
+    #                 nlu_resources_dir + "/nlu-config.yml", folds=2, verbose=True)
+    evaluate(nlu_data_dir + "/wnut_2017/wnut-train-nlu-data.json",
+             nlu_resources_dir + "/nlu-config.yml",
+             nlu_data_dir + "/wnut_2017/wnut-train-nlu-data.json")
+    # evaluate_string(nlu_data_dir + "/wnut_2017/wnut-train-nlu-data.json",
+    #                 nlu_resources_dir + "/nlu-config.yml", "This is America")

@@ -1,7 +1,7 @@
 import os
 from data.make_dataset import add_entities
 
-# parses the conll file into a formatted array
+# parses the wnut file into a formatted array
 
 
 def parse_file(filename):
@@ -19,7 +19,7 @@ def parse_file(filename):
 
         # 1 line = 1 word
         for line in f:
-            if line == "\n":
+            if line.lstrip(" \t") == "\n":
                 if len(sentence['words']) > 0:
                     document.append(sentence)
                     sentence = {
