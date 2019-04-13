@@ -8,6 +8,7 @@ import tempfile
 import json
 import os
 from operator import eq
+import argparse
 
 """
 Run crossvalidation with nlu-data.json given trained models using nlu-config.yml
@@ -20,13 +21,13 @@ nlu_resources_dir = os.path.join(dirname, './resources')
 
 # MANY TO ONE MAPPING FOR WNUT
 # spacy -> wnut
-wnut_labels = ["location", "corporation", "group",
+wnut_labels = ["location", "group",
                "creative-work", "person", "product", "o"]
 wnut_mappings = {
     "gpe": "location",
     "loc": "location",
     "fac": "location",
-    "org": "corporation",
+    "org": "group",
     "norp": "group",
     "work_of_art": "creative-work",
     "person": "person",
@@ -149,7 +150,7 @@ def align_all_predictions(targets, predictions, tokens):
 def get_statistics(json_per_document, concat_targets, concat_predictions):
     from sklearn.metrics import precision_recall_fscore_support as pr
     prec, rec, f1, _ = pr([wnut_mappings[p.lower()] for p in concat_predictions],
-                          [t.lower() for t in concat_targets], labels=wnut_labels)
+                          ["group" if t.lower() is "corporation" else t.lower() for t in concat_targets], labels=wnut_labels)
 
     return {"precision": prec, "recall": rec, "f1": f1}
 
@@ -262,10 +263,21 @@ def evaluate_string(data_path, config_path, sample_string):
 
 
 if __name__ == "__main__":
-    # crossvalidation(nlu_data_dir + "/wnut_2017/wnut-train-nlu-data.json",
-    #                 nlu_resources_dir + "/nlu-config.yml", folds=2, verbose=True)
-    evaluate(nlu_data_dir + "/wnut_2017/wnut-train-nlu-data.json",
-             nlu_resources_dir + "/nlu-config.yml",
-             nlu_data_dir + "/wnut_2017/wnut-train-nlu-data.json")
+    parser = argparse.ArgumentParser(description="evaluation utilities")
+    parser.add_argument('--crossvalidation',
+                        help="use crossvalidation on data, printing statistics", action="store_true")
+    parser.add_argument('--evaluate',
+                        help="train model with training data and evaluate on test data, printing statistics", action="store_true")
+    args = parser.parse_args()
+
+    if args.crossvalidation and args.evaluate:
+        print("Cannot use options --crossvalidation and --evaluate at the same time")
+    elif args.crossvalidation:
+        crossvalidation(nlu_data_dir + "/wnut_2017/wnut-train-nlu-data.json",
+                        nlu_resources_dir + "/nlu-config.yml", folds=2, verbose=True)
+    elif args.evaluate:
+        evaluate(nlu_data_dir + "/wnut_2017/wnut-train-nlu-data.json",
+                 nlu_resources_dir + "/nlu-config.yml",
+                 nlu_data_dir + "/wnut_2017/wnut-test-nlu-data.json")
     # evaluate_string(nlu_data_dir + "/wnut_2017/wnut-train-nlu-data.json",
     #                 nlu_resources_dir + "/nlu-config.yml", "This is America")
