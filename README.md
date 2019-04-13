@@ -102,7 +102,7 @@ spokesman	O
 ```
 
 ## Generate Rasa NLU data
-Using data in `.txt` files in `/data/interim`, Rasa NLU data (`.json`) files can be generate by running `python3 src/models/resources/generate_nlu_data.py dataset txtfile`. For example: `python3 src/models/resources/generate_nlu_data.py wnut_2017 train.txt` generates `wnut-train-nlu-data.json` in `/data/processed`.
+Using data in `.txt` files in `/data/interim`, Rasa NLU data (`.json`) files can be generate by running `python3 src/models/resources/generate_nlu_data.py dataset txtfile`. For example: `python3 src/models/resources/generate_nlu_data.py wnut_2017 train.txt` generates `wnut-train-nlu-data.json` in `/data/processed/wnut_2017`.
 
 ## Evaluating models (currently hardcoded for WNUT)
 ### Crossvalidation
