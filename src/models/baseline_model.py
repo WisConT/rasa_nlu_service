@@ -59,8 +59,8 @@ def increment_field(statistics, entity, field):
     return statistics
 
 
-def calculate_statistics(statistics):
-    # also calculate stats for total corpus
+def calculate_performance_statistics(statistics):
+    # calculate performance stats for total corpus
     statistics['corpus_total'] = {
         'true_positive': reduce(lambda x, v: x + v['true_positive'], statistics.values(), 0),
         'false_positive': reduce(lambda x, v: x + v['false_positive'], statistics.values(), 0),
@@ -117,11 +117,21 @@ def get_statistics(documents, spacy_labels=None, mappings={}):
 
     statistics = {}
 
-    for i in range(len(documents)):
-        print("doc: " + str(i + 1) + "/" + str(len(documents)))
-        document = documents[i]
+    document_count = 0
+    sentence_count = 0
+    words_count = 0
+    entities_count = 0
+
+    entity_reference_count = {}
+
+    while document_count < len(documents):
+        print("doc: " + str(document_count + 1) + "/" + str(len(documents)))
+        document = documents[document_count]
 
         for sentence in document:
+            sentence_count += 1
+            words_count += len(sentence['words'])
+
             result = interpreter.parse(sentence['full_text'])
 
             for predicted_entity in result['entities']:
@@ -148,6 +158,17 @@ def get_statistics(documents, spacy_labels=None, mappings={}):
                     statistics = increment_field(statistics, entity_name.lower(), 'false_positive')
 
             for true_entity in sentence['entities']:
+                entities_count += 1
+                true_entity_name = true_entity['entity'].lower()
+                true_entity_value = true_entity['value'].lower()
+
+                # collect stats about avg. number of entities a given words referrs to
+                if true_entity_value in entity_reference_count:
+                    if true_entity_name not in entity_reference_count[true_entity_value]:
+                        entity_reference_count[true_entity_value].append(true_entity_name)
+                else:
+                    entity_reference_count[true_entity_value] = [true_entity_name]
+
                 if spacy_labels is not None and predicted_entity['entity'].lower() not in spacy_labels:
                     continue
 
@@ -159,9 +180,30 @@ def get_statistics(documents, spacy_labels=None, mappings={}):
                         break
 
                 if not found:
-                    statistics = increment_field(statistics, true_entity['entity'].lower(), 'false_negative')
+                    statistics = increment_field(statistics, true_entity_name, 'false_negative')
+
+        document_count += 1
+
+    total_number_of_entities = sum(list(map(lambda x: len(x), entity_reference_count.values())))
+    
+    # average number of unique entities a phrase/word refers to, ignoring those
+    # that refer to no entities
+    avg_entities_per_word = total_number_of_entities / len(entity_reference_count)
 
     # calculate precision, recall, f1
-    statistics = calculate_statistics(statistics)
+    perf_stats = calculate_performance_statistics(statistics)
+    meta_stats = {
+        "document_count": document_count,
+        "sentence_count": sentence_count,
+        "words_count": words_count,
+        "entities_count": entities_count
+    }
+    entity_stats = {
+        "avg_entities_per_word": avg_entities_per_word
+    }
 
-    return statistics
+    return {
+        "performance": perf_stats,
+        "meta": meta_stats,
+        "entity_stats": entity_stats
+    }
