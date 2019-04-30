@@ -1,7 +1,7 @@
 from __future__ import division
 from rasa_nlu.model import Metadata, Interpreter
 from rasa_nlu.evaluate import *
-from rasa_nlu.training_data import load_data
+from rasa_nlu.training_data import load_data, TrainingData
 from rasa_nlu import config
 from collections import defaultdict
 import tempfile
@@ -9,6 +9,8 @@ import json
 import os
 from operator import eq
 import argparse
+import plac
+from pathlib import Path
 
 """
 Run crossvalidation with nlu-data.json given trained models using nlu-config.yml
@@ -169,11 +171,13 @@ def evaluate_test_data(interpreter, test_data):
     entity_results = defaultdict(lambda: defaultdict(list))
     extractors = get_entity_extractors(interpreter)
     entity_predictions, tokens = get_entity_predictions(interpreter, test_data)
-
+    print("got entity predictions")
     if not extractors:
         return entity_results
 
     entity_targets = get_entity_targets(test_data)
+    print("got entity targets")
+
     per_document, all_t, all_p = align_all_predictions(
         entity_targets, entity_predictions, tokens)
 
@@ -237,7 +241,7 @@ def evaluate(train_data_path, config_path, test_data_path):
     train_data = load_data(train_data_path)
     test_data = load_data(test_data_path)
     print("Training model with training data")
-    interpreter = trainer.train(train_data)
+    interpreter = trainer.train(TrainingData())
     print("Evaluating test data with trained model")
     res = evaluate_test_data(interpreter, test_data)
     print("statistics: " + str(res["stats"]))
@@ -262,22 +266,48 @@ def evaluate_string(data_path, config_path, sample_string):
     print(json.dumps(raw, separators=(',', ':'), indent=4))
 
 
-if __name__ == "__main__":
-    parser = argparse.ArgumentParser(description="evaluation utilities")
-    parser.add_argument('--crossvalidation',
-                        help="use crossvalidation on data, printing statistics", action="store_true")
-    parser.add_argument('--evaluate',
-                        help="train model with training data and evaluate on test data, printing statistics", action="store_true")
-    args = parser.parse_args()
+@plac.annotations(
+    train_data_path=("training data", "positional", None, Path),
+    setting=("setting", "positional", None, str),
+    config=("config", "positional", None, Path),
+    test_data_path=("test data", "option", "test", None, Path),
+    test_string=("string", "option", "string", None, str)
+)
+def main(train_data_path=None, config=None, setting=None, test_data_path=None, test_string=None):
+    if setting == "crossvalidation":
+        crossvalidation(nlu_data_dir + train_data_path,
+                        nlu_resources_dir + config, folds=2, verbose=True)
+    elif setting == "evaluate":
+        evaluate(nlu_data_dir + train_data_path,
+                 nlu_resources_dir + config,
+                 nlu_data_dir + test_data_path)
+    elif setting == "evaluate_string":
+        evaluate_string(nlu_data_dir + train_data_path,
+                        nlu_resources_dir + config, test_string)
 
-    if args.crossvalidation and args.evaluate:
-        print("Cannot use options --crossvalidation and --evaluate at the same time")
-    elif args.crossvalidation:
-        crossvalidation(nlu_data_dir + "/wnut_2017/wnut-train-nlu-data.json",
-                        nlu_resources_dir + "/nlu-config.yml", folds=2, verbose=True)
-    elif args.evaluate:
-        evaluate(nlu_data_dir + "/wnut_2017/wnut-train-nlu-data.json",
-                 nlu_resources_dir + "/nlu-config.yml",
-                 nlu_data_dir + "/wnut_2017/wnut-test-nlu-data.json")
-    # evaluate_string(nlu_data_dir + "/wnut_2017/wnut-train-nlu-data.json",
-    #                 nlu_resources_dir + "/nlu-config.yml", "This is America")
+
+if __name__ == '__main__':
+    plac.call(main)
+
+# if __name__ == "__main__":
+#     parser = argparse.ArgumentParser(description="evaluation utilities")
+#     parser.add_argument('--crossvalidation',
+#                         help="use crossvalidation on data, printing statistics", action="store_true")
+#     parser.add_argument('--evaluate',
+#                         help="train model with training data and evaluate on test data, printing statistics", action="store_true")
+#     parser.add_argument('--string',
+#                         help="train model with training data and evaluate on string", action="store_true")
+#     args = parser.parse_args()
+
+#     if args.crossvalidation and args.evaluate:
+#         print("Cannot use options --crossvalidation and --evaluate at the same time")
+#     elif args.crossvalidation:
+#         crossvalidation(nlu_data_dir + "/wnut_2017/wnut-train-nlu-data.json",
+#                         nlu_resources_dir + "/nlu-config.yml", folds=2, verbose=True)
+#     elif args.evaluate:
+#         evaluate(nlu_data_dir + "/wnut_2017/wnut-train-nlu-data.json",
+#                  nlu_resources_dir + "/nlu-config.yml",
+#                  nlu_data_dir + "/wnut_2017/wnut-test-nlu-data.json")
+#     elif args.string:
+#         evaluate_string(nlu_data_dir + "/wnut_2017/wnut-train-nlu-data.json",
+#                         nlu_resources_dir + "/similarity-config.yml", "I love the Arctic Monkeys, they are such a good band")
