@@ -6,7 +6,7 @@ from data.clean_dataset_onto import clean_dataset
 
 
 def parse_file(filename):
-    with open(filename, 'r') as f:
+    with open(filename, 'r', encoding="ISO-8859-1") as f:
         document = []
 
         sentence = {
@@ -43,8 +43,10 @@ def get_dataset():
     print("Fetching dataset...")
 
     dirname = os.path.dirname(__file__)  # NOQA: E402
-    interim_data = os.path.join(dirname, '../../data/interim/onto5/english/annotations/')
-    directory_paths = [(dirpath, filenames) for (dirpath, dirnames, filenames) in os.walk(interim_data)]
+    interim_data = os.path.join(
+        dirname, '../../data/interim/onto5/english/annotations/')
+    directory_paths = [(dirpath, filenames)
+                       for (dirpath, dirnames, filenames) in os.walk(interim_data)]
 
     documents = []
 
