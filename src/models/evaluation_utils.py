@@ -23,13 +23,13 @@ nlu_resources_dir = os.path.join(dirname, './resources')
 
 # MANY TO ONE MAPPING FOR WNUT
 # spacy -> wnut
-wnut_labels = ["location", "group",
+wnut_labels = ["location", "group", "corporation",
                "creative-work", "person", "product", "o"]
 wnut_mappings = {
     "gpe": "location",
     "loc": "location",
     "fac": "location",
-    "org": "group",
+    "org": "corporation",
     "norp": "group",
     "work_of_art": "creative-work",
     "person": "person",
@@ -151,8 +151,10 @@ def align_all_predictions(targets, predictions, tokens):
 
 def get_statistics(json_per_document, concat_targets, concat_predictions):
     from sklearn.metrics import precision_recall_fscore_support as pr
-    prec, rec, f1, _ = pr([wnut_mappings[p.lower()] for p in concat_predictions],
-                          ["group" if t.lower() is "corporation" else t.lower() for t in concat_targets], labels=wnut_labels)
+    # prec, rec, f1, _ = pr([p.lower() for p in concat_predictions],
+    #                       ["group" if t.lower() is "corporation" else t.lower() for t in concat_targets], labels=wnut_labels)
+    prec, rec, f1, _ = pr([p.lower() for p in concat_predictions],
+                          [wnut_mappings[t.lower()] for t in concat_targets], labels=wnut_labels)
 
     return {"precision": prec, "recall": rec, "f1": f1}
 
@@ -181,6 +183,7 @@ def evaluate_test_data(interpreter, test_data):
     per_document, all_t, all_p = align_all_predictions(
         entity_targets, entity_predictions, tokens)
 
+    print(all_t)
     statistics = get_statistics(per_document, all_t, all_p)
     # err = 1 - sum([aligned_predictions[i]["match_cat"]
     #    for i in range(0, len(aligned_predictions))])/len(aligned_predictions)
@@ -267,13 +270,13 @@ def evaluate_string(data_path, config_path, sample_string):
 
 
 @plac.annotations(
-    train_data_path=("training data", "positional", None, Path),
+    train_data_path=("training data", "positional", None, str),
     setting=("setting", "positional", None, str),
-    config=("config", "positional", None, Path),
-    test_data_path=("test data", "option", "test", None, Path),
+    config=("config", "positional", None, str),
+    test_data_path=("test data", "positional", None, str),
     test_string=("string", "option", "string", None, str)
 )
-def main(train_data_path=None, config=None, setting=None, test_data_path=None, test_string=None):
+def main(train_data_path=None,  setting=None, config=None, test_data_path=None, test_string=None):
     if setting == "crossvalidation":
         crossvalidation(nlu_data_dir + train_data_path,
                         nlu_resources_dir + config, folds=2, verbose=True)

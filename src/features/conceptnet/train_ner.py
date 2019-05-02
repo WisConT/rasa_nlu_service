@@ -19,6 +19,7 @@ import spacy
 from spacy.util import minibatch, compounding
 from rasa_nlu.training_data import load_data
 import os
+import numpy as np
 
 dirname = os.path.dirname(__file__)
 nlu_data_dir = os.path.join(dirname, '../../../data/processed')
@@ -49,7 +50,8 @@ def rasa_data_to_spacy_data(rasa_data):
 )
 def main(model=None, output_dir=None, n_iter=100):
     train_data = load_data(
-        nlu_data_dir + "/wnut_2017/wnut-test-nlu-data.json")
+        nlu_data_dir + "/onto5/onto-nlu-data.json")
+    train_data, _ = train_data.train_test_split(train_frac=0.1)
     rasa_data_to_spacy_data(train_data)
     """Load the model, set up the pipeline and train the entity recognizer."""
     # if model is not None:
@@ -59,19 +61,29 @@ def main(model=None, output_dir=None, n_iter=100):
     #     nlp = spacy.blank("en")  # create blank Language class
     #     print("Created blank 'en' model")
     # load existing spaCy model
-    nlp = spacy.load('en')
-    # nlp = spacy.load('data/embeddings/numberbatch/numberbatch_spacy')
+    nlp_en = spacy.load('en')
+    nlp_spacy = spacy.load('./data/embeddings/numberbatch/numberbatch_spacy')
+    nlp = nlp_spacy
     print("Model loaded")
     # create the built-in pipeline components and add them to the pipeline
     # nlp.create_pipe works for built-ins that are registered with spaCy
     if "ner" not in nlp.pipe_names:
+        tag = nlp_en.get_pipe("tagger")
+        pars = nlp_en.get_pipe("parser")
         ner = nlp.create_pipe("ner")
+###
+
+        nlp.add_pipe(tag, last=True)
+        nlp.add_pipe(pars, last=True)
+
+###
         nlp.add_pipe(ner, last=True)
     # otherwise, get it so we can add labels
     else:
         ner = nlp.get_pipe("ner")
+
     print(nlp.pipeline)
-    nlp.pipeline = [nlp.pipeline[2]]
+
     # add labels
     for _, annotations in TRAIN_DATA:
         for ent in annotations.get("entities"):
@@ -117,12 +129,12 @@ def main(model=None, output_dir=None, n_iter=100):
         print("Saved model to", output_dir)
 
         # test the saved model
-        print("Loading from", output_dir)
-        nlp2 = spacy.load(output_dir)
-        for text, _ in TRAIN_DATA:
-            doc = nlp2(text)
-            print("Entities", [(ent.text, ent.label_) for ent in doc.ents])
-            print("Tokens", [(t.text, t.ent_type_, t.ent_iob) for t in doc])
+        # print("Loading from", output_dir)
+        # nlp2 = spacy.load(output_dir)
+        # for text, _ in TRAIN_DATA:
+        #     doc = nlp2(text)
+        #     print("Entities", [(ent.text, ent.label_) for ent in doc.ents])
+        #     print("Tokens", [(t.text, t.ent_type_, t.ent_iob) for t in doc])
 
 
 if __name__ == "__main__":
