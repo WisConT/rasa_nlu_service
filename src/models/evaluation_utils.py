@@ -23,7 +23,7 @@ nlu_resources_dir = os.path.join(dirname, './resources')
 
 # MANY TO ONE MAPPING FOR WNUT
 # spacy -> wnut
-wnut_labels = ["location", "group", "corporation",
+wnut_labels = ["location", "group",
                "creative-work", "person", "product", "o"]
 wnut_mappings = {
     "gpe": "location",
@@ -151,10 +151,10 @@ def align_all_predictions(targets, predictions, tokens):
 
 def get_statistics(json_per_document, concat_targets, concat_predictions):
     from sklearn.metrics import precision_recall_fscore_support as pr
+    prec, rec, f1, _ = pr([wnut_mappings[p.lower()] for p in concat_predictions],
+                          ["group" if t.lower() is "corporation" else t.lower() for t in concat_targets], labels=wnut_labels)
     # prec, rec, f1, _ = pr([p.lower() for p in concat_predictions],
-    #                       ["group" if t.lower() is "corporation" else t.lower() for t in concat_targets], labels=wnut_labels)
-    prec, rec, f1, _ = pr([p.lower() for p in concat_predictions],
-                          [wnut_mappings[t.lower()] for t in concat_targets], labels=wnut_labels)
+    #                       [wnut_mappings[t.lower()] for t in concat_targets], labels=wnut_labels)
 
     return {"precision": prec, "recall": rec, "f1": f1}
 
@@ -183,7 +183,6 @@ def evaluate_test_data(interpreter, test_data):
     per_document, all_t, all_p = align_all_predictions(
         entity_targets, entity_predictions, tokens)
 
-    print(all_t)
     statistics = get_statistics(per_document, all_t, all_p)
     # err = 1 - sum([aligned_predictions[i]["match_cat"]
     #    for i in range(0, len(aligned_predictions))])/len(aligned_predictions)

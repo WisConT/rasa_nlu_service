@@ -48,7 +48,7 @@ def rasa_data_to_spacy_data(rasa_data):
     output_dir=("Optional output directory", "option", "o", Path),
     n_iter=("Number of training iterations", "option", "n", int),
 )
-def main(model=None, output_dir=None, n_iter=100):
+def main(model=None, output_dir=None, n_iter=30):
     train_data = load_data(
         nlu_data_dir + "/onto5/onto-nlu-data.json")
     train_data, _ = train_data.train_test_split(train_frac=0.1)
