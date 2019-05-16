@@ -12,8 +12,8 @@
             "class": "rasa_nlu.tokenizers.spacy_tokenizer.SpacyTokenizer"
         },
         {
-            "name": "ner_spacy",
-            "class": "rasa_nlu.extractors.spacy_entity_extractor.SpacyEntityExtractor"
+            "name": "flair_ner",
+            "class": "resources.components.flair_ner.FlairNER"
         },
         {
             "name": "ner_synonyms",
@@ -22,6 +22,6 @@
         }
     ],
     "training_data": "training_data.json",
-    "trained_at": "20190408-221556",
-    "rasa_nlu_version": "0.14.6"
+    "trained_at": "20190506-175103",
+    "rasa_nlu_version": "0.14.3"
 }
