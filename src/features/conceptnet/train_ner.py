@@ -38,15 +38,7 @@ VALID_DATA = []
 
 
 def get_scores(nlp, examples):
-    """
-    calculate the score of train data
-    :param nlp:
-    :param examples:
-    :return: scorer.scores
-    """
     random.shuffle(examples)
-
-    # print("Loss", "P", "R", "F")
 
     scores, loss = evaluate(nlp, examples)
     # report_scores(loss, scores)
@@ -68,16 +60,16 @@ def evaluate(nlp, dev_sents):
     return scorer.scores, np.reciprocal(scorer.scores['ents_f'])
 
 
-def report_scores(loss, scores):
-    """
-    prints precision recall and f_measure
-    :param scores:
-    :return:
-    """
-    precision = '%.2f' % scores['ents_p']
-    recall = '%.2f' % scores['ents_r']
-    f_measure = '%.2f' % scores['ents_f']
-    # print('%s %s %s %s' % (loss, precision, recall, f_measure))
+# def report_scores(loss, scores):
+#     """
+#     prints precision recall and f_measure
+#     :param scores:
+#     :return:
+#     """
+#     precision = '%.2f' % scores['ents_p']
+#     recall = '%.2f' % scores['ents_r']
+#     f_measure = '%.2f' % scores['ents_f']
+#     # print('%s %s %s %s' % (loss, precision, recall, f_measure))
 
 
 def rasa_data_to_spacy_data(rasa_data, spacy_data):
@@ -165,8 +157,7 @@ def main(model=None, output_dir=None, n_iter=100):
     # get names of other pipes to disable them during training
     other_pipes = [pipe for pipe in nlp.pipe_names if pipe != "ner"]
 
-    with nlp.disable_pipes(*other_pipes):  # only train NER
-        # reset and initialize the weights randomly – but only if we're training a new model
+    with nlp.disable_pipes(*other_pipes):
         nlp.begin_training(tok2vec_args=tok2vec_args)
         print('Training...')
         for itn in range(n_iter):
