@@ -1,13 +1,13 @@
 import os
 from data.make_dataset import add_entities
 
-# parses the wnut file into a formatted array
+# parses the conll file into a formatted array
 
 
 def parse_file(filename):
     print("Parsing file...")
 
-    with open(filename, 'r') as f:
+    with open(filename, 'r', encoding='cp1252') as f:
         documents = []
         document = []
 
@@ -19,7 +19,7 @@ def parse_file(filename):
 
         # 1 line = 1 word
         for line in f:
-            if line.lstrip(" \t") == "\n":
+            if line == "\n":
                 if len(sentence['words']) > 0:
                     document.append(sentence)
                     sentence = {
@@ -61,4 +61,4 @@ def get_dataset():
     dirname = os.path.dirname(__file__)  # NOQA: E402
 
     return parse_file(os.path.join(
-        dirname, '../../data/interim/wnut_2017/test.txt'))
+        dirname, '../../data/interim/umbc/test.txt'))

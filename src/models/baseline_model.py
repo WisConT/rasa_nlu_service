@@ -53,7 +53,7 @@ def increment_field(statistics, entity, field):
             'false_positive': 0,
             'false_negative': 0
         }
-    
+
     statistics[entity][field] += 1
 
     return statistics
@@ -77,7 +77,7 @@ def calculate_performance_statistics(statistics):
             entity_stats['recall'] = entity_stats['true_positive'] / tp_fn
         else:
             entity_stats['recall'] = 0
-        
+
         if tp_fp > 0:
             entity_stats['precision'] = entity_stats['true_positive'] / tp_fp
         else:
@@ -86,10 +86,11 @@ def calculate_performance_statistics(statistics):
         pr_re = entity_stats['precision'] + entity_stats['recall']
 
         if pr_re > 0:
-            entity_stats['f1'] = (2 * entity_stats['precision'] * entity_stats['recall']) / pr_re
+            entity_stats['f1'] = (
+                2 * entity_stats['precision'] * entity_stats['recall']) / pr_re
         else:
             entity_stats['f1'] = 0
-    
+
     return statistics
 
 
@@ -153,9 +154,11 @@ def get_statistics(documents, spacy_labels=None, mappings={}):
                     entity_name = mappings[entity_name.lower()][0]
 
                 if found:
-                    statistics = increment_field(statistics, entity_name.lower(), 'true_positive')
+                    statistics = increment_field(
+                        statistics, entity_name.lower(), 'true_positive')
                 else:
-                    statistics = increment_field(statistics, entity_name.lower(), 'false_positive')
+                    statistics = increment_field(
+                        statistics, entity_name.lower(), 'false_positive')
 
             for true_entity in sentence['entities']:
                 entities_count += 1
@@ -180,7 +183,8 @@ def get_statistics(documents, spacy_labels=None, mappings={}):
                         break
 
                 if not found:
-                    statistics = increment_field(statistics, true_entity_name, 'false_negative')
+                    statistics = increment_field(
+                        statistics, true_entity_name, 'false_negative')
 
         document_count += 1
 

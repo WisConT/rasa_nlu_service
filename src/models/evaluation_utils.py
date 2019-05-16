@@ -8,7 +8,7 @@ import tempfile
 import json
 import os
 from operator import eq
-from baseline_model import entities_equal
+import argparse
 
 """
 Run crossvalidation with nlu-data.json given trained models using nlu-config.yml
@@ -16,53 +16,59 @@ Run crossvalidation with nlu-data.json given trained models using nlu-config.yml
 """
 
 dirname = os.path.dirname(__file__)
-data_dir = os.path.join(dirname, './data')
+nlu_data_dir = os.path.join(dirname, '../../data/processed')
+nlu_resources_dir = os.path.join(dirname, './resources')
+
+# MANY TO ONE MAPPING FOR WNUT
+# spacy -> wnut
+wnut_labels = ["location", "group",
+               "creative-work", "person", "product", "o"]
+wnut_mappings = {
+    "gpe": "location",
+    "loc": "location",
+    "fac": "location",
+    "org": "group",
+    "norp": "group",
+    "work_of_art": "creative-work",
+    "person": "person",
+    "product": "product",
+    "event": "o",
+    "law": "o",
+    "language": "o",
+    "date": "o",
+    "time": "o",
+    "percent": "o",
+    "money": "o",
+    "quantity": "o",
+    "ordinal": "o",
+    "cardinal": "o",
+    "o": "o"
+}
+
+conll_mappings = {
+    "gpe": ["loc"],
+    "loc": ["loc"],
+    "fac": ["loc"],
+    "org": ["org"],
+    "norp": ["o"],
+    "work_of_art": ["o"],
+    "person": ["per"],
+    "product": ["o"],
+    "event": ["o"],
+    "law": ["o"],
+    "language": ["o"],
+    "date": ["o"],
+    "time": ["o"],
+    "percent": ["o"],
+    "money": ["o"],
+    "quantity": ["o"],
+    "ordinal": ["o"],
+    "cardinal": ["o"],
+    "o": ["o"]
+}
 
 
 def get_match_result(targets, predictions):
-    wnut_mappings = {
-        "gpe": ["location"],
-        "loc": ["location"],
-        "fac": ["location"],
-        "org": ["group", "corporation"],
-        "norp": ["group"],
-        "work_of_art": ["creative-work"],
-        "person": ["person"],
-        "product": ["product"],
-        "event": ["o"],
-        "law": ["o"],
-        "language": ["o"],
-        "date": ["o"],
-        "time": ["o"],
-        "percent": ["o"],
-        "money": ["o"],
-        "quantity": ["o"],
-        "ordinal": ["o"],
-        "cardinal": ["o"],
-        "o": ["o"]
-    }
-
-    conll_mappings = {
-        "gpe": ["loc"],
-        "loc": ["loc"],
-        "fac": ["loc"],
-        "org": ["org"],
-        "norp": ["o"],
-        "work_of_art": ["o"],
-        "person": ["per"],
-        "product": ["o"],
-        "event": ["o"],
-        "law": ["o"],
-        "language": ["o"],
-        "date": ["o"],
-        "time": ["o"],
-        "percent": ["o"],
-        "money": ["o"],
-        "quantity": ["o"],
-        "ordinal": ["o"],
-        "cardinal": ["o"],
-        "o": ["o"]
-    }
     return all([t.lower() in wnut_mappings[p.lower()] for t, p in zip(targets, predictions)])
 
 # def get_match_result(targets, predictions):
@@ -112,9 +118,7 @@ def align_predictions(targets, predictions, tokens):
         extracted = determine_token_labels(t, predictions, None)
         predicted_labels.append(extracted)
 
-    match_cat = get_match_result(true_token_labels, predicted_labels)
-
-    return {"target_labels": true_token_labels, "predicted_labels": predicted_labels, "match_cat": match_cat}
+    return {"target_labels": true_token_labels, "predicted_labels": predicted_labels}
 
 
 def align_all_predictions(targets, predictions, tokens):
@@ -129,10 +133,26 @@ def align_all_predictions(targets, predictions, tokens):
     Returns:
         List of dictionaries containing the true token labels and token labels
     """
-    aligned_predictions = []
+    prediction_per_document = []
+    concat_targets = []
+    concat_predictions = []
+
     for ts, ps, tks in zip(targets, predictions, tokens):
-        aligned_predictions.append(align_predictions(ts, ps, tks))
-    return aligned_predictions
+        aligned_json = align_predictions(ts, ps, tks)
+        prediction_per_document.append(aligned_json)
+        concat_targets = concat_targets + aligned_json["target_labels"]
+        concat_predictions = concat_predictions + \
+            aligned_json["predicted_labels"]
+
+    return prediction_per_document, concat_targets, concat_predictions
+
+
+def get_statistics(json_per_document, concat_targets, concat_predictions):
+    from sklearn.metrics import precision_recall_fscore_support as pr
+    prec, rec, f1, _ = pr([wnut_mappings[p.lower()] for p in concat_predictions],
+                          ["group" if t.lower() is "corporation" else t.lower() for t in concat_targets], labels=wnut_labels)
+
+    return {"precision": prec, "recall": rec, "f1": f1}
 
 
 def evaluate_test_data(interpreter, test_data):
@@ -154,21 +174,23 @@ def evaluate_test_data(interpreter, test_data):
         return entity_results
 
     entity_targets = get_entity_targets(test_data)
-    aligned_predictions = align_all_predictions(
+    per_document, all_t, all_p = align_all_predictions(
         entity_targets, entity_predictions, tokens)
-    print(align_predictions)
-    err = 1 - sum([aligned_predictions[i]["match_cat"]
-                   for i in range(0, len(aligned_predictions))])/len(aligned_predictions)
+
+    statistics = get_statistics(per_document, all_t, all_p)
+    # err = 1 - sum([aligned_predictions[i]["match_cat"]
+    #    for i in range(0, len(aligned_predictions))])/len(aligned_predictions)
 
     for i, td in enumerate(test_data.training_examples):
-        aligned_predictions[i]["text"] = td.text
+        per_document[i]["text"] = td.text
 
-    return {"json": json.dumps(aligned_predictions, separators=(',', ':'), indent=4), "err": err}
+    return {"json": json.dumps(per_document, separators=(',', ':'), indent=4), "stats": statistics}
 
 
 def crossvalidation(data_path, config_path, folds=10, verbose=False):
     """
-    Perform cross validation given Rasa NLU data and pipeline configuration
+    Perform cross validation given Rasa NLU data and pipeline configuration,
+    printing f1 scores per entity
 
     Parameters:
         data_path: relative path of Rasa NLU data(.json)
@@ -182,21 +204,46 @@ def crossvalidation(data_path, config_path, folds=10, verbose=False):
     tmp_dir = tempfile.mkdtemp()
     trainer = Trainer(config.load(config_path))
     data = load_data(data_path)
-    err = 0
+    # err = 0
     for idx, (train, test) in enumerate(generate_folds(folds, data)):
+        print("Training model with training data")
         interpreter = trainer.train(train)
+        print("Evaluating test data with trained model")
         res = evaluate_test_data(interpreter, test)
-        err = err + res["err"]
+        # err = err + res["err"]
         if not verbose:
             continue
         print("fold: " + str(idx))
-        print("result: " + res["json"])
-        print("error: " + str(res["err"]))
+        # print("result: " + res["json"])
+        print("statistics: " + str(res["stats"]))
     shutil.rmtree(tmp_dir, ignore_errors=True)
-    print("Average error: " + str(err/folds))
+    # print("Average error: " + str(err/folds))
 
 
-def evaluate(data_path, config_path, sample_string):
+def evaluate(train_data_path, config_path, test_data_path):
+    """
+    Evaluate test data given model derived from Rasa NLU training data and pipeline configuration,
+    printing f1 scores per entity
+
+    Parameters:
+        train_data_path: relative path of Rasa NLU training data(.json)
+        config_path: relative path of Rasa NLU pipeline config(.yml)
+        test_data_path: relative path of Rasa NLU test data(.json)
+
+    Returns:
+        None
+    """
+    trainer = Trainer(config.load(config_path))
+    train_data = load_data(train_data_path)
+    test_data = load_data(test_data_path)
+    print("Training model with training data")
+    interpreter = trainer.train(train_data)
+    print("Evaluating test data with trained model")
+    res = evaluate_test_data(interpreter, test_data)
+    print("statistics: " + str(res["stats"]))
+
+
+def evaluate_string(data_path, config_path, sample_string):
     """
     Evaluate sample_string given model derived from Rasa NLU data and pipeline configuration
 
@@ -216,7 +263,21 @@ def evaluate(data_path, config_path, sample_string):
 
 
 if __name__ == "__main__":
-    crossvalidation(data_dir + "/wnut-nlu-data.json",
-                    data_dir + "/nlu-config.yml", folds=2, verbose=True)
-    # evaluate(data_dir + "/jason-nlu-data.json",
-    #          data_dir + "/nlu-config.yml", "This is America")
+    parser = argparse.ArgumentParser(description="evaluation utilities")
+    parser.add_argument('--crossvalidation',
+                        help="use crossvalidation on data, printing statistics", action="store_true")
+    parser.add_argument('--evaluate',
+                        help="train model with training data and evaluate on test data, printing statistics", action="store_true")
+    args = parser.parse_args()
+
+    if args.crossvalidation and args.evaluate:
+        print("Cannot use options --crossvalidation and --evaluate at the same time")
+    elif args.crossvalidation:
+        crossvalidation(nlu_data_dir + "/wnut_2017/wnut-train-nlu-data.json",
+                        nlu_resources_dir + "/nlu-config.yml", folds=2, verbose=True)
+    elif args.evaluate:
+        evaluate(nlu_data_dir + "/wnut_2017/wnut-train-nlu-data.json",
+                 nlu_resources_dir + "/nlu-config.yml",
+                 nlu_data_dir + "/wnut_2017/wnut-test-nlu-data.json")
+    # evaluate_string(nlu_data_dir + "/wnut_2017/wnut-train-nlu-data.json",
+    #                 nlu_resources_dir + "/nlu-config.yml", "This is America")
