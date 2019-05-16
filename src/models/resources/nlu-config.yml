@@ -2,6 +2,7 @@ language: "en"
 
 pipeline:
 - name: "nlp_spacy"
+  model: "en_core_web_sm"
 - name: "tokenizer_spacy"
 # - name: "intent_entity_featurizer_regex"
 # - name: "intent_featurizer_spacy"

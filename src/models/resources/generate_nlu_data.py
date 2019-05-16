@@ -42,6 +42,19 @@ def main(setting=None, file_name=None):
         nlu_data["rasa_nlu_data"]["common_examples"] = common_examples
         with open(dirname + '/../../../data/processed/' + dataset_name + prefix + '-nlu-data.json', 'w') as outfile:
             json.dump(nlu_data, outfile, separators=(',', ':'), indent=4)
+    elif setting == "conll_2003":
+        from data.make_dataset_conll import parse_file
+        txt_file_name = file_name
+        documents = parse_file(os.path.join(
+            dirname, '../../../data/interim/' + dataset_name + '/' + txt_file_name))
+        documents = [item for doc in documents for item in doc]
+        prefix = "/conll-"
+        common_examples = [{"intent": "greeting", "entities": doc["entities"], "text": doc["full_text"]}
+                           for doc in documents]
+        nlu_data["rasa_nlu_data"]["common_examples"] = common_examples
+
+        with open(dirname + '/../../../data/processed/' + dataset_name + prefix + os.path.splitext(txt_file_name)[0] + '-nlu-data.json', 'w') as outfile:
+            json.dump(nlu_data, outfile, separators=(',', ':'), indent=4)
 
 
 if __name__ == '__main__':

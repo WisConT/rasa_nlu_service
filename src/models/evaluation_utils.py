@@ -21,6 +21,8 @@ dirname = os.path.dirname(__file__)
 nlu_data_dir = os.path.join(dirname, '../../data/processed')
 nlu_resources_dir = os.path.join(dirname, './resources')
 
+conll_labels = ["per", "loc", "o"]
+onto_labels = ["person", "gpe", "loc", "o"]
 # MANY TO ONE MAPPING FOR WNUT
 # spacy -> wnut
 wnut_labels = ["location", "group",
@@ -151,8 +153,8 @@ def align_all_predictions(targets, predictions, tokens):
 
 def get_statistics(json_per_document, concat_targets, concat_predictions):
     from sklearn.metrics import precision_recall_fscore_support as pr
-    prec, rec, f1, _ = pr([wnut_mappings[p.lower()] for p in concat_predictions],
-                          ["group" if t.lower() is "corporation" else t.lower() for t in concat_targets], labels=wnut_labels)
+    prec, rec, f1, _ = pr([p.lower() for p in concat_predictions],
+                          ["group" if t.lower() is "corporation" else t.lower() for t in concat_targets], labels=onto_labels)
     # prec, rec, f1, _ = pr([p.lower() for p in concat_predictions],
     #                       [wnut_mappings[t.lower()] for t in concat_targets], labels=wnut_labels)
 
@@ -226,7 +228,7 @@ def crossvalidation(data_path, config_path, folds=10, verbose=False):
     # print("Average error: " + str(err/folds))
 
 
-def evaluate(train_data_path, config_path, test_data_path):
+def evaluate(config_path, test_data_path):
     """
     Evaluate test data given model derived from Rasa NLU training data and pipeline configuration,
     printing f1 scores per entity
@@ -240,7 +242,7 @@ def evaluate(train_data_path, config_path, test_data_path):
         None
     """
     trainer = Trainer(config.load(config_path))
-    train_data = load_data(train_data_path)
+    # train_data = load_data(train_data_path)
     test_data = load_data(test_data_path)
     print("Training model with training data")
     interpreter = trainer.train(TrainingData())
@@ -249,7 +251,7 @@ def evaluate(train_data_path, config_path, test_data_path):
     print("statistics: " + str(res["stats"]))
 
 
-def evaluate_string(data_path, config_path, sample_string):
+def evaluate_string(config_path, sample_string):
     """
     Evaluate sample_string given model derived from Rasa NLU data and pipeline configuration
 
@@ -262,30 +264,28 @@ def evaluate_string(data_path, config_path, sample_string):
         None
     """
     trainer = Trainer(config.load(config_path))
-    data = load_data(data_path)
-    interpreter = trainer.train(data)
+    interpreter = trainer.train(TrainingData())
     raw = interpreter.parse(sample_string)
     print(json.dumps(raw, separators=(',', ':'), indent=4))
 
 
 @plac.annotations(
-    train_data_path=("training data", "positional", None, str),
+    # train_data_path=("training data", "positional", None, str),
     setting=("setting", "positional", None, str),
     config=("config", "positional", None, str),
     test_data_path=("test data", "positional", None, str),
-    test_string=("string", "option", "string", None, str)
+    test_string=("string", "positional", None, str)
 )
-def main(train_data_path=None,  setting=None, config=None, test_data_path=None, test_string=None):
-    if setting == "crossvalidation":
-        crossvalidation(nlu_data_dir + train_data_path,
-                        nlu_resources_dir + config, folds=2, verbose=True)
-    elif setting == "evaluate":
-        evaluate(nlu_data_dir + train_data_path,
-                 nlu_resources_dir + config,
+def main(setting=None, config=None, test_data_path=None, test_string=None):
+    # if setting == "crossvalidation":
+        # crossvalidation(nlu_data_dir + train_data_path,
+        #                 nlu_resources_dir + config, folds=2, verbose=True)
+    # el
+    if setting == "evaluate":
+        evaluate(nlu_resources_dir + config,
                  nlu_data_dir + test_data_path)
     elif setting == "evaluate_string":
-        evaluate_string(nlu_data_dir + train_data_path,
-                        nlu_resources_dir + config, test_string)
+        evaluate_string(nlu_resources_dir + config, test_string)
 
 
 if __name__ == '__main__':

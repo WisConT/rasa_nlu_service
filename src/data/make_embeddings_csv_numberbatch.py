@@ -32,7 +32,7 @@ def get_embeddings(df, words):
 
 
 def get_embeddings_dataframe():
-    return pd.read_csv(embedding_dir + '/numberbatch_eng.csv')
+    return pd.read_csv(embedding_dir + '/numberbatch.csv')
 
 
 def decapitate_csv(inp, out):
@@ -43,9 +43,7 @@ def decapitate_csv(inp, out):
 
 
 if __name__ == "__main__":
-    # generate_numberbatch_csv(
-    #     embedding_dir + '/numberbatch-17.06.txt', embedding_dir + '/numberbatch.csv')
+    generate_numberbatch_csv(
+        embedding_dir + '/numberbatch-en-17.06.txt', embedding_dir + '/numberbatch.csv')
     # generate_english_numberbatch_csv(
     #     embedding_dir + '/numberbatch.csv', embedding_dir + '/numberbatch_eng.csv')
-    decapitate_csv(embedding_dir + '/numberbatch_eng.csv',
-                   embedding_dir + '/numberbatch_eng.txt')
