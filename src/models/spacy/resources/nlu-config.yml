@@ -6,7 +6,6 @@ pipeline:
 # - name: "intent_entity_featurizer_regex"
 # - name: "intent_featurizer_spacy"
 # - name: "ner_crf"
-- name: "resources.components.flair_ner.FlairNER"
-# - name: "ner_spacy"
+- name: "ner_spacy"
 - name: "ner_synonyms"
 # - name: "intent_classifier_sklearn"

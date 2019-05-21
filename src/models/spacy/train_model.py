@@ -25,7 +25,7 @@ def train_nlu():
         os.path.join(dirname, 'resources/nlu-config.yml')))
     trainer.train(training_data)
 
-    model_path = os.path.join(dirname, '../../models/nlu/')
+    model_path = os.path.join(dirname, '../../../models/spacy/')
     model_directory = trainer.persist(model_path, fixed_model_name='current')
 
     return model_directory
@@ -36,7 +36,7 @@ def train_dialogue(domain_file=None, model_path=None, training_data_file=None):
     domain_file = os.path.join(
         dirname, 'resources/domain.yml') if domain_file == None else domain_file
     model_path = os.path.join(
-        dirname, '../../models/dialogue') if model_path == None else model_path
+        dirname, '../../../models/spacy_dialogue') if model_path == None else model_path
     training_data_file = os.path.join(
         dirname, 'resources/stories.md') if training_data_file == None else training_data_file
 

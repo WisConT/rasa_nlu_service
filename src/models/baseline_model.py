@@ -1,6 +1,6 @@
-from rasa_nlu.model import Interpreter
 from functools import reduce
 import os
+import time
 
 
 def entities_equal(pred, true, mappings={}):
@@ -77,7 +77,7 @@ def calculate_performance_statistics(statistics):
             entity_stats['recall'] = entity_stats['true_positive'] / tp_fn
         else:
             entity_stats['recall'] = 0
-        
+
         if tp_fp > 0:
             entity_stats['precision'] = entity_stats['true_positive'] / tp_fp
         else:
@@ -93,12 +93,13 @@ def calculate_performance_statistics(statistics):
     return statistics
 
 
-def get_statistics(documents, spacy_labels=None, mappings={}):
+def get_statistics(documents, interpreter, spacy_labels=None, mappings={}):
     """Given a list of documents in the format given from parse_file functions
     get the recall, precision and f1 scores for the documents.
 
     Parameters:
         documents: list of documents provided by the parse_file function
+        interpreter: the RASA interpreter to perform NER
         spacy_labels: list of all the spacy entity names to be used, entities
             that are not in this list will be ignored, do not pass a value and
             all labels will be used (NOTE: lowercase)
@@ -111,10 +112,6 @@ def get_statistics(documents, spacy_labels=None, mappings={}):
     """
     print("Calculating corpus statistics...")
 
-    dirname = os.path.dirname(__file__)
-    model_path = os.path.join(dirname, '../../models/nlu/default/current')
-    interpreter = Interpreter.load(model_path)
-
     statistics = {}
 
     document_count = 0
@@ -123,6 +120,8 @@ def get_statistics(documents, spacy_labels=None, mappings={}):
     entities_count = 0
 
     entity_reference_count = {}
+
+    start_timestamp = time.time()
 
     while document_count < len(documents):
         print("doc: " + str(document_count + 1) + "/" + str(len(documents)))
@@ -183,6 +182,8 @@ def get_statistics(documents, spacy_labels=None, mappings={}):
                     statistics = increment_field(statistics, true_entity_name, 'false_negative')
 
         document_count += 1
+    
+    end_timestamp = time.time()
 
     total_number_of_entities = sum(list(map(lambda x: len(x), entity_reference_count.values())))
     
@@ -205,5 +206,6 @@ def get_statistics(documents, spacy_labels=None, mappings={}):
     return {
         "performance": perf_stats,
         "meta": meta_stats,
-        "entity_stats": entity_stats
+        "entity_stats": entity_stats,
+        "time_taken": end_timestamp - start_timestamp
     }

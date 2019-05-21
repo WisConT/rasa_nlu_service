@@ -1,0 +1,54 @@
+{
+    "performance": {
+        "org": {
+            "true_positive": 660,
+            "false_positive": 488,
+            "false_negative": 332,
+            "recall": 0.6653225806451613,
+            "precision": 0.5749128919860628,
+            "f1": 0.616822429906542
+        },
+        "loc": {
+            "true_positive": 1311,
+            "false_positive": 437,
+            "false_negative": 182,
+            "recall": 0.8780977896851976,
+            "precision": 0.75,
+            "f1": 0.8090095649490898
+        },
+        "per": {
+            "true_positive": 1066,
+            "false_positive": 300,
+            "false_negative": 259,
+            "recall": 0.8045283018867925,
+            "precision": 0.780380673499268,
+            "f1": 0.7922705314009663
+        },
+        "misc": {
+            "true_positive": 0,
+            "false_positive": 0,
+            "false_negative": 261,
+            "recall": 0.0,
+            "precision": 0,
+            "f1": 0
+        },
+        "corpus_total": {
+            "true_positive": 3037,
+            "false_positive": 1225,
+            "false_negative": 1034,
+            "recall": 0.7460083517563252,
+            "precision": 0.7125762552792116,
+            "f1": 0.7289091563662546
+        }
+    },
+    "meta": {
+        "document_count": 230,
+        "sentence_count": 3442,
+        "words_count": 46165,
+        "entities_count": 5620
+    },
+    "entity_stats": {
+        "avg_entities_per_word": 1.027037617554859
+    },
+    "time_taken": 67.3460910320282
+}
