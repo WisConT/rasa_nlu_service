@@ -1,6 +1,7 @@
 import os
 import sys
 import re
+# from data.make_dataset_onto import parse_file
 
 """
 Credit: yohanesgultom
@@ -19,20 +20,21 @@ DOC_PATTERN = re.compile(r'<(\/)?DOC', re.I)
 NON_ENTITY_TYPE = 'O'
 
 
-def check_and_process_eos(out, cur_type, token, prefix=''):
+def check_and_process_eos(out, cur_type, token, prefix='', cased=True):
     match = re.match(EOS_PATTERN, token)
     if match:
-        out.write(match.group(1) + '\t' + prefix + cur_type + '\n')
+        entity_text = match.group(1) if cased else match.group(1).lower()
+        out.write(entity_text + '\t' + prefix + cur_type + '\n')
         out.write('.' + '\t' + cur_type + '\n')
         out.write('\n')
         return True
     return False
 
 
-def convert(file_from, file_to):
+def convert(file_from, file_to, cased=True):
     cur_type = NON_ENTITY_TYPE
 
-    with open(file_from, 'r') as f, open(file_to, 'w') as out:
+    with open(file_from, 'r') as f, open(file_to, 'a') as out:
         for line in f:
             if re.match(DOC_PATTERN, line):
                 continue
@@ -45,29 +47,35 @@ def convert(file_from, file_to):
                 match = re.match(START_PATTERN, token)
                 if match:
                     if match.group(1):
-                        out.write(match.group(1) + '\t' + NON_ENTITY_TYPE + '\n')
+                        entity_text = match.group(1) if cased else match.group(1).lower()
+                        out.write(entity_text + '\t' + NON_ENTITY_TYPE + '\n')
                     continue
 
                 match = re.match(END_SINGLE_PATTERN, token)
                 if match:
-                    out.write(match.group(2) + '\t' + 'B-' + match.group(1) + '\n')
+                    entity_text = match.group(2) if cased else match.group(2).lower()
+                    out.write(entity_text + '\t' + 'B-' + match.group(1) + '\n')
                     cur_type = NON_ENTITY_TYPE
-                    if not check_and_process_eos(out, cur_type, match.group(3)) and match.group(3):
-                        out.write(match.group(3) + '\t' + cur_type + '\n')
+                    if not check_and_process_eos(out, cur_type, match.group(3), cased=cased) and match.group(3):
+                        entity_text = match.group(3) if cased else match.group(3).lower()
+                        out.write(entity_text + '\t' + cur_type + '\n')
                     continue
 
                 match = re.match(END_SINGLE_OTHER_ATTR_PATTERN, token)
                 if match:
-                    out.write(match.group(2) + '\t' + 'B-' + cur_type + '\n')
+                    entity_text = match.group(2) if cased else match.group(2).lower()
+                    out.write(entity_text + '\t' + 'B-' + cur_type + '\n')
                     cur_type = NON_ENTITY_TYPE
-                    if not check_and_process_eos(out, cur_type, match.group(3)) and match.group(3):
-                        out.write(match.group(3) + '\t' + cur_type + '\n')
+                    if not check_and_process_eos(out, cur_type, match.group(3), cased=cased) and match.group(3):
+                        entity_text = match.group(3) if cased else match.group(3).lower()
+                        out.write(entity_text + '\t' + cur_type + '\n')
                     continue
 
                 match = re.match(TYPE_PATTERN, token)
                 if match:
                     cur_type = match.group(1)
-                    out.write(match.group(2) + '\t' + 'B-' + cur_type + '\n')
+                    entity_text = match.group(2) if cased else match.group(2).lower()
+                    out.write(entity_text + '\t' + 'B-' + cur_type + '\n')
                     continue
 
                 match = re.match(TYPE_NO_END_PATTERN, token)
@@ -78,22 +86,27 @@ def convert(file_from, file_to):
                 match = re.match(OTHER_ATTR_PATTERN, token)
                 if match:
                     cur_type = match.group(1)
-                    out.write(match.group(2) + '\t' + 'B-' + cur_type + '\n')
+                    entity_text = match.group(2) if cased else match.group(2).lower()
+                    out.write(entity_text + '\t' + 'B-' + cur_type + '\n')
                     continue
 
                 match = re.match(END_MULTI_PATTERN, token)
                 if match:
-                    out.write(match.group(1) + '\t' + 'I-' + cur_type + '\n')
+                    entity_text = match.group(1) if cased else match.group(1).lower()
+                    out.write(entity_text + '\t' + 'I-' + cur_type + '\n')
                     cur_type = NON_ENTITY_TYPE
-                    if not check_and_process_eos(out, cur_type, match.group(2)) and match.group(2):
-                        out.write(match.group(2) + '\t' + cur_type + '\n')
+                    if not check_and_process_eos(out, cur_type, match.group(2), cased=cased) and match.group(2):
+                        entity_text = match.group(2) if cased else match.group(2).lower()
+                        out.write(entity_text + '\t' + cur_type + '\n')
                     continue
 
-                if check_and_process_eos(out, cur_type, token, 'I-'):
+                if check_and_process_eos(out, cur_type, token, 'I-', cased=cased):
                     continue
 
                 if len(token) == 2 and token[0] == '/':
                     token = token[1]
+                
+                token = token if cased else token.lower()
 
                 if cur_type != NON_ENTITY_TYPE:
                     out.write(token + '\t' + 'I-' + cur_type + '\n')
@@ -102,31 +115,31 @@ def convert(file_from, file_to):
 
             out.write('\n')
 
+
 def clean_dataset():
     print("Cleaning dataset...")
     dirname = os.path.dirname(__file__)  # NOQA: E402
-    external_data = os.path.join(dirname, '../../data/external/onto5/english/annotations/')
+    external_data = os.path.join(dirname, '../../../data/external/onto5/english/annotations/')
     directory_paths = [(dirpath, list(filter(lambda x: x.endswith('.name'), filenames))) for (dirpath, dirnames, filenames) in os.walk(external_data)]
     filtered_files = list(filter(lambda x: len(x[1]) > 0, directory_paths))
 
-    output_loc = os.path.join(dirname, '../../data/interim/onto5/english/annotations/')
+    output_loc = os.path.join(dirname, '../../../data/interim/onto5/')
+    cased_new_file_path = os.path.join(output_loc, 'data_cased.iob2')
+    uncased_new_file_path = os.path.join(output_loc, 'data_uncased.iob2')
 
     if not os.path.exists(output_loc):
         os.makedirs(output_loc)
 
+    f1 = open(cased_new_file_path, "w+")
+    f2 = open(uncased_new_file_path, "w+")
+
     for (dirname, files) in filtered_files:
         for ner_file in files:
-            abs_path = os.path.abspath(dirname)
-            sub_path = abs_path.split('onto5/english/annotations/', 1)[1]
-            new_dir = os.path.join(output_loc, sub_path)
-
-            if not os.path.exists(new_dir):
-                os.makedirs(new_dir)
-
             old_file_path = os.path.join(dirname, ner_file)
-            new_file_path = os.path.join(new_dir, ner_file)
 
-            convert(old_file_path, new_file_path)
+            convert(old_file_path, cased_new_file_path, cased=True)
+            convert(old_file_path, uncased_new_file_path, cased=False)
+
 
 if __name__ == '__main__':
     clean_dataset()

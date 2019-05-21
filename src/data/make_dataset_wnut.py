@@ -1,5 +1,5 @@
 import os
-from data.make_dataset import add_entities
+from utils import add_entities
 
 # parses the conll file into a formatted array
 

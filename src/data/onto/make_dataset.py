@@ -1,6 +1,10 @@
 import os
-from data.make_dataset import add_entities
-from data.clean_dataset_onto import clean_dataset
+import sys
+
+dirname = os.path.dirname(__file__)  # NOQA: E402
+sys.path.append(os.path.join(dirname, '../'))  # NOQA: E402
+
+from utils import add_entities
 
 # parses the onto files into a formatted array
 
@@ -39,19 +43,13 @@ def parse_file(filename):
         return add_entities(document)
 
 
-def get_dataset():
+def get_dataset(cased=True):
     print("Fetching dataset...")
 
     dirname = os.path.dirname(__file__)  # NOQA: E402
-    interim_data = os.path.join(dirname, '../../data/interim/onto5/english/annotations/')
-    directory_paths = [(dirpath, filenames) for (dirpath, dirnames, filenames) in os.walk(interim_data)]
+    data_path = '../../../data/interim/onto5/data_cased.iob2' if cased else '../../../data/interim/onto5/data_uncased.iob2'
+    data_file = os.path.join(dirname, data_path)
 
-    documents = []
+    document = parse_file(data_file)
 
-    for (dirname, files) in directory_paths:
-        for ner_file in files:
-            file_path = os.path.join(dirname, ner_file)
-            document = parse_file(file_path)
-            documents.append(document)
-
-    return documents
+    return [document]
