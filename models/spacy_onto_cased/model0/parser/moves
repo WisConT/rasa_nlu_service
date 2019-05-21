@@ -1,0 +1,20 @@
+Å´transitionsŸ◊[
+  {
+    "clas":0,
+    "move":0,
+    "label":"",
+    "name":"S"
+  },
+  {
+    "clas":1,
+    "move":1,
+    "label":"",
+    "name":"D"
+  },
+  {
+    "clas":2,
+    "move":4,
+    "label":"ROOT",
+    "name":"B-ROOT"
+  }
+]
