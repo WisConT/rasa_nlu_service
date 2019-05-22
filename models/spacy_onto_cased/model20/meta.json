@@ -1,0 +1,31 @@
+{
+  "lang":"en",
+  "pipeline":[
+    "tagger",
+    "parser",
+    "ner"
+  ],
+  "spacy_version":">=2.1.4",
+  "speed":{
+    "nwords":412705,
+    "cpu":7038.0094920987,
+    "gpu":null
+  },
+  "accuracy":{
+    "uas":0.0,
+    "las":0.0,
+    "ents_p":79.6012868005,
+    "ents_r":50.2384101886,
+    "ents_f":61.5996831564,
+    "tags_acc":100.0,
+    "token_acc":100.0
+  },
+  "vectors":{
+    "width":0,
+    "vectors":0,
+    "keys":0,
+    "name":"spacy_pretrained_vectors"
+  },
+  "name":"model0",
+  "version":"0.0.0"
+}

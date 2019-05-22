@@ -1,30 +1,31 @@
 {
   "lang":"en",
-  "name":"unnamed",
   "pipeline":[
     "tagger",
     "parser",
     "ner"
   ],
+  "spacy_version":">=2.1.4",
+  "speed":{
+    "nwords":412705,
+    "cpu":5305.3632643942,
+    "gpu":null
+  },
   "accuracy":{
     "uas":0.0,
     "las":0.0,
-    "ents_p":60.3203180676,
-    "ents_r":49.4724213246,
-    "ents_f":54.3604651163,
+    "ents_p":72.9312424608,
+    "ents_r":46.4976774233,
+    "ents_f":56.7891493838,
     "tags_acc":100.0,
     "token_acc":100.0
-  },
-  "speed":{
-    "nwords":412705,
-    "cpu":4989.7985596331,
-    "gpu":null
   },
   "vectors":{
     "width":0,
     "vectors":0,
-    "keys":0
+    "keys":0,
+    "name":"spacy_pretrained_vectors"
   },
-  "spacy_version":">=2.0.18",
-  "version":"V"
+  "name":"model0",
+  "version":"0.0.0"
 }
