@@ -78,6 +78,7 @@ target/
 # exclude unprocessed data from source control by default
 /data/external/
 /data/interim/
+/data/spacy_ready/
 
 # Mac OS-specific storage files
 .DS_Store
