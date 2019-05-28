@@ -16,6 +16,7 @@ import plac
 import random
 from pathlib import Path
 import spacy
+from spacy.language import Language
 from spacy.util import minibatch, compounding
 from spacy._ml import Tok2Vec
 from spacy.gold import GoldParse
@@ -99,7 +100,7 @@ def main(model=None, output_dir=None, n_iter=100):
     rasa_data_to_spacy_data(valid_data, VALID_DATA)
 
     tok2vec_args = {'dep': False, 'sem_diff': False,
-                    'width': 96, 'static': False}
+                    'width': 96, 'static': False, 'pretrained_width': 300}
 
     print("Loading model...")
     nlp_en = spacy.load('en')
@@ -120,6 +121,10 @@ def main(model=None, output_dir=None, n_iter=100):
         nlp_sm = spacy.load('en_core_web_sm')
         nlp = nlp_sm
         print("en_core_web_sm model loaded")
+    elif model == "en_lg_prune":
+        nlp = Language().from_disk('./models/language/pruned_lg')
+        print("Number of keys:", len(nlp.vocab.vectors.keys()))
+        print("Number of values:", len(nlp.vocab.vectors))
     else:
         print("Unsupported language model")
         exit()
@@ -184,6 +189,15 @@ def main(model=None, output_dir=None, n_iter=100):
             if len(a) > 0 and a[0] < a[1] and a[1] < a[2] and a[2] < a[3]:
                 print("Overfitting")
                 break
+
+            if itn % 25 is 0:
+                checkpoint_dir = output_dir
+                if checkpoint_dir is not None:
+                    checkpoint_dir = Path(checkpoint_dir/str(itn))
+                    if not checkpoint_dir.exists():
+                        checkpoint_dir.mkdir()
+                    nlp.to_disk(checkpoint_dir)
+                    print("Saved model to", checkpoint_dir)
 
     # save model to output directory
     if output_dir is not None:

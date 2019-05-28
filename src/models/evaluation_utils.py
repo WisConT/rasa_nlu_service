@@ -11,6 +11,7 @@ from operator import eq
 import argparse
 import plac
 from pathlib import Path
+import copy
 
 """
 Run crossvalidation with nlu-data.json given trained models using nlu-config.yml
@@ -22,7 +23,8 @@ nlu_data_dir = os.path.join(dirname, '../../data/processed')
 nlu_resources_dir = os.path.join(dirname, './resources')
 
 conll_labels = ["per", "loc", "o"]
-onto_labels = ["person", "gpe", "loc", "o"]
+onto_labels = ["person", "loc", "o"]
+neel_labels = ["person\n", "location\n", "o"]
 # MANY TO ONE MAPPING FOR WNUT
 # spacy -> wnut
 wnut_labels = ["location", "group",
@@ -49,10 +51,32 @@ wnut_mappings = {
     "o": "o"
 }
 
+onto_mappings = {
+    "gpe": ["loc"],
+    "loc": ["loc"],
+    "fac": ["o"],
+    "org": ["org"],
+    "norp": ["o"],
+    "work_of_art": ["o"],
+    "person": ["person"],
+    "product": ["o"],
+    "event": ["o"],
+    "law": ["o"],
+    "language": ["o"],
+    "date": ["o"],
+    "time": ["o"],
+    "percent": ["o"],
+    "money": ["o"],
+    "quantity": ["o"],
+    "ordinal": ["o"],
+    "cardinal": ["o"],
+    "o": ["o"]
+}
+
 conll_mappings = {
     "gpe": ["loc"],
     "loc": ["loc"],
-    "fac": ["loc"],
+    "fac": ["o"],
     "org": ["org"],
     "norp": ["o"],
     "work_of_art": ["o"],
@@ -70,6 +94,14 @@ conll_mappings = {
     "cardinal": ["o"],
     "o": ["o"]
 }
+
+neel_mappings = copy.deepcopy(conll_mappings)
+neel_mappings["person"] = ["person\n"]
+neel_mappings["gpe"] = ["location\n"]
+neel_mappings["loc"] = ["location\n"]
+neel_mappings["fac"] = ["location\n"]
+neel_mappings["org"] = ["org\n"]
+
 
 
 def get_match_result(targets, predictions):
@@ -153,8 +185,8 @@ def align_all_predictions(targets, predictions, tokens):
 
 def get_statistics(json_per_document, concat_targets, concat_predictions):
     from sklearn.metrics import precision_recall_fscore_support as pr
-    prec, rec, f1, _ = pr([p.lower() for p in concat_predictions],
-                          ["group" if t.lower() is "corporation" else t.lower() for t in concat_targets], labels=onto_labels)
+    prec, rec, f1, _ = pr([onto_mappings[p.lower()] for p in concat_predictions],
+                          ["loc" if t.lower() == "gpe" else t.lower() for t in concat_targets], labels=onto_labels)
     # prec, rec, f1, _ = pr([p.lower() for p in concat_predictions],
     #                       [wnut_mappings[t.lower()] for t in concat_targets], labels=wnut_labels)
 

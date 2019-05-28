@@ -9,7 +9,7 @@ embedding_dir = os.path.join(dirname, '../../data/embeddings/numberbatch')
 def generate_numberbatch_csv(txt_path, csv_path):
     read = pd.read_csv(txt_path, sep=" ", skiprows=[
                        0], names=["id"] + range(300))
-    read.to_csv(path_or_buf=csv_path, index=False)
+    read.to_csv(path_or_buf=csv_path, index=True)
 
 
 def generate_english_numberbatch_csv(in_csv_path, out_csv_path):

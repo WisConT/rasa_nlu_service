@@ -140,7 +140,7 @@ class SpacyNBEntityExtractor(EntityExtractor):
 
     def __init__(self, component_config: Text = None) -> None:
         self.nlp = spacy.load(
-            './models/pipeline/numberbatch/test')
+            './models/pipeline/en_lg/test')
         super(SpacyNBEntityExtractor, self).__init__(component_config)
 
     def process(self, message: Message, **kwargs: Any) -> None:
