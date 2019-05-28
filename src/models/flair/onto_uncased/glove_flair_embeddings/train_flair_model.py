@@ -19,9 +19,6 @@ def train_model():
         dev_file='dev.conll'
     )
 
-    print(corpus)
-    return
-
     tag_type = 'ner'
 
     tag_dictionary = corpus.make_tag_dictionary(tag_type=tag_type)
