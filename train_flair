@@ -1,0 +1,2 @@
+python3.6 src/models/flair/onto_uncased/glove_flair_embeddings/train_flair_model.py
+python3.6 src/models/flair/onto_cased/glove_flair_embeddings/train_flair_model.py
