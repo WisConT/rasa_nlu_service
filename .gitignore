@@ -80,6 +80,8 @@ target/
 /data/interim/
 /data/spacy_ready/
 
+models/rasa
+
 # Mac OS-specific storage files
 .DS_Store
 

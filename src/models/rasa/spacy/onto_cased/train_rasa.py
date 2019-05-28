@@ -25,7 +25,7 @@ def train_nlu():
         os.path.join(dirname, 'resources/nlu-config.yml')))
     trainer.train(training_data)
 
-    model_path = os.path.join(dirname, '../../../../models/rasa/spacy_onto_cased/')
+    model_path = os.path.join(dirname, '../../../../models/rasa/spacy/onto_cased/')
     model_directory = trainer.persist(model_path, fixed_model_name='current')
 
     return model_directory

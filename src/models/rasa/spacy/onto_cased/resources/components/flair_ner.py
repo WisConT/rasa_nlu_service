@@ -1,36 +1,32 @@
-import typing
-from typing import Any, Dict, List, Text
+from rasa_nlu.components import Component
+from rasa_nlu.config import override_defaults
+
+from flair.data import Sentence
+from flair.models import SequenceTagger
+
 import os
 import spacy
 
-from rasa.nlu.extractors import EntityExtractor
-from rasa.nlu.training_data import Message
+class SpacyNER(Component):
 
-if typing.TYPE_CHECKING:
-    from spacy.tokens.doc import Doc
-
-
-class SpacyEntityExtractor(EntityExtractor):
-
+    name = "spacy_ner"
     provides = ["entities"]
-
-    requires = ["spacy_nlp"]
-
     defaults = {
         # by default all dimensions recognized by spacy are returned
         # dimensions can be configured to contain an array of strings
         # with the names of the dimensions to filter for
         "dimensions": None
     }
+    language_list = ["en"]
 
-    def __init__(self, component_config: Text = None) -> None:
-        super(SpacyEntityExtractor, self).__init__(component_config)
+    def __init__(self, component_config = None):
+        super(SpacyNER, self).__init__(component_config)
 
         dirname = os.path.dirname(__file__) # NOQA: E402
-        model_path = os.path.join(dirname, '../../../../../../models/spacy/spacy_onto_cased/model-best')
+        model_path = os.path.join(dirname, '../../../../../../../models/spacy/spacy_onto_cased/model-best')
         self.spacy_nlp = spacy.load(model_path)
 
-    def process(self, message: Message, **kwargs: Any) -> None:
+    def process(self, message, **kwargs):
         # can't use the existing doc here (spacy_doc on the message)
         # because tokens are lower cased which is bad for NER
         doc = self.spacy_nlp(message.text)
@@ -44,7 +40,7 @@ class SpacyEntityExtractor(EntityExtractor):
         )
 
     @staticmethod
-    def extract_entities(doc: "Doc") -> List[Dict[Text, Any]]:
+    def extract_entities(doc):
         entities = [
             {
                 "entity": ent.label_,
