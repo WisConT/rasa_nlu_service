@@ -45,7 +45,8 @@ def train_model():
 
     trainer.train(
         model_location,
-        max_epochs=150
+        max_epochs=150,
+        checkpoint=True
     )
 
 if __name__ == '__main__':
