@@ -45,7 +45,7 @@ def train_model():
     trainer.train(
         model_location,
         learning_rate=0.1,
-        embeddings_in_memory=False
+        embeddings_in_memory=True
     )
 
 if __name__ == '__main__':
