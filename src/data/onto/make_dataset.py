@@ -6,11 +6,12 @@ sys.path.append(os.path.join(dirname, '../'))  # NOQA: E402
 
 from utils import add_entities
 
-# parses the onto files into a formatted array
-
-
+# parses the onto notes data into a formatted array
 def parse_file(filename):
+    print("Parsing file...")
+
     with open(filename, 'r') as f:
+        documents = []
         document = []
 
         sentence = {
@@ -33,6 +34,13 @@ def parse_file(filename):
 
             split_line = line.split()
 
+            if split_line[0] == '-DOCUMENT-':
+                if len(document) > 0:
+                    documents.append(document)
+                    document = []
+
+                continue
+
             if len(sentence['words']) != 0:
                 sentence['full_text'] = sentence['full_text'] + ' '
 
@@ -40,16 +48,28 @@ def parse_file(filename):
             sentence['tags'].append(split_line[1])
             sentence['full_text'] = sentence['full_text'] + split_line[0]
 
-        return add_entities(document)
+        print("File parsed")
+        
+        documents = list(map(lambda doc: add_entities(doc), documents))
+
+        return documents
 
 
 def get_dataset(cased=True):
     print("Fetching dataset...")
 
+    cased_path = 'cased' if cased else 'uncased'
+
     dirname = os.path.dirname(__file__)  # NOQA: E402
-    data_path = '../../../data/interim/onto5/data_cased.iob2' if cased else '../../../data/interim/onto5/data_uncased.iob2'
-    data_file = os.path.join(dirname, data_path)
+    test_file_path = os.path.join(
+        dirname, '../../../data/processed/onto5/flair/' + cased_path + '/test.iob2')
+    train_file_path = os.path.join(
+        dirname, '../../../data/processed/onto5/flair/' + cased_path + '/train.iob2')
+    dev_file_path = os.path.join(
+        dirname, '../../../data/processed/onto5/flair/' + cased_path + '/dev.iob2')
 
-    document = parse_file(data_file)
+    test = parse_file(test_file_path)
+    train = parse_file(train_file_path)
+    dev = parse_file(dev_file_path)
 
-    return [document]
+    return test, train, dev

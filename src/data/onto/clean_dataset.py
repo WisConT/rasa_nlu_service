@@ -35,6 +35,7 @@ def convert(file_from, file_to, cased=True):
     cur_type = NON_ENTITY_TYPE
 
     with open(file_from, 'r') as f, open(file_to, 'a') as out:
+        out.write('-DOCUMENT-\n')
         for line in f:
             if re.match(DOC_PATTERN, line):
                 continue
