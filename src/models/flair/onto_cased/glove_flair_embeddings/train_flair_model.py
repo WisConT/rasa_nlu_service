@@ -9,24 +9,27 @@ def train_model():
     columns = {0: 'text', 1: 'ner'}
 
     dirname = os.path.dirname(__file__)  # NOQA: E402
-    data_folder = os.path.join(dirname, '../../../../../data/processed/onto5/flair/cased')
+    data_folder = os.path.join(dirname, '../../../../../data/processed/onto5/cased')
 
     corpus = NLPTaskDataFetcher.load_column_corpus(
         data_folder,
         columns,
-        train_file='train.iob2',
-        test_file='test.iob2',
-        dev_file='dev.iob2'
+        train_file='train.conll',
+        test_file='test.conll',
+        dev_file='dev.conll'
     )
+
+    print(corpus)
+    return
 
     tag_type = 'ner'
 
     tag_dictionary = corpus.make_tag_dictionary(tag_type=tag_type)
 
     embedding_types = [
-        WordEmbeddings('glove'),
-        FlairEmbeddings('news-forward'),
-        FlairEmbeddings('news-backward')
+        WordEmbeddings('crawl'),
+        FlairEmbeddings('news-forward', use_cache=True),
+        FlairEmbeddings('news-backward', use_cache=True)
     ]
 
     embeddings = StackedEmbeddings(embeddings=embedding_types)
@@ -36,7 +39,6 @@ def train_model():
         embeddings=embeddings,
         tag_dictionary=tag_dictionary,
         tag_type=tag_type,
-        use_crf=True
     )
 
     trainer = ModelTrainer(tagger, corpus)
@@ -45,8 +47,8 @@ def train_model():
 
     trainer.train(
         model_location,
-        max_epochs=150,
-        checkpoint=True
+        learning_rate=0.1,
+        embeddings_in_memory=False
     )
 
 if __name__ == '__main__':

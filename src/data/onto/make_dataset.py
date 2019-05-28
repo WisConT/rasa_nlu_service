@@ -54,7 +54,7 @@ def parse_file(filename):
 
         return documents
 
-
+# TODO: make sure data is loaded as multiple documents
 def get_dataset(cased=True):
     print("Fetching dataset...")
 
