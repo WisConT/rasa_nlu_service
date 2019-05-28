@@ -1,0 +1,2 @@
+python3.6 -m spacy train en models/spacy/onto_cased data/spacy_ready/cased/train.json data/speacy_ready/cased/dev.json --n-iter 50 --n-early-stopping 10
+python3.6 -m spacy train en models/spacy/onto_uncased data/spacy_ready/uncased/train.json data/speacy_ready/uncased/dev.json --n-iter 50 --n-early-stopping 10
