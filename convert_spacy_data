@@ -1,7 +1,11 @@
-python3.6 -m spacy convert data/processed/onto5/spacy/uncased/train.conll data/spacy_ready/uncased --file-type json --converter ner
-python3.6 -m spacy convert data/processed/onto5/spacy/uncased/test.conll data/spacy_ready/uncased --file-type json --converter ner
-python3.6 -m spacy convert data/processed/onto5/spacy/uncased/dev.conll data/spacy_ready/uncased --file-type json --converter ner
+mkdir data/spacy_ready
+mkdir data/spacy_ready/cased
+mkdir data/spacy_ready/uncased
 
-python3.6 -m spacy convert data/processed/onto5/spacy/cased/train.conll data/spacy_ready/cased --file-type json --converter ner
-python3.6 -m spacy convert data/processed/onto5/spacy/cased/test.conll data/spacy_ready/cased --file-type json --converter ner
-python3.6 -m spacy convert data/processed/onto5/spacy/cased/dev.conll data/spacy_ready/cased --file-type json --converter ner
+python3.6 -m spacy convert data/processed/onto5/uncased/train.conll data/spacy_ready/uncased --file-type json --converter ner
+python3.6 -m spacy convert data/processed/onto5/uncased/test.conll data/spacy_ready/uncased --file-type json --converter ner
+python3.6 -m spacy convert data/processed/onto5/uncased/dev.conll data/spacy_ready/uncased --file-type json --converter ner
+
+python3.6 -m spacy convert data/processed/onto5/cased/train.conll data/spacy_ready/cased --file-type json --converter ner
+python3.6 -m spacy convert data/processed/onto5/cased/test.conll data/spacy_ready/cased --file-type json --converter ner
+python3.6 -m spacy convert data/processed/onto5/cased/dev.conll data/spacy_ready/cased --file-type json --converter ner
