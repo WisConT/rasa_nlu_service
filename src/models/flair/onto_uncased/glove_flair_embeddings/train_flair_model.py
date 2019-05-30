@@ -6,7 +6,7 @@ from flair.models import SequenceTagger
 import os
 
 def train_model():
-    columns = {0: 'text', 1: 'ner'}
+    columns = {0: 'text', 3: 'ner'}
 
     dirname = os.path.dirname(__file__)  # NOQA: E402
     data_folder = os.path.join(dirname, '../../../../../data/processed/onto5/uncased')
