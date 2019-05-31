@@ -1,4 +1,3 @@
-from flair.data import TaggedCorpus
 from flair.data_fetcher import NLPTaskDataFetcher
 from flair.embeddings import TokenEmbeddings, WordEmbeddings, StackedEmbeddings, FlairEmbeddings
 from flair.trainers import ModelTrainer

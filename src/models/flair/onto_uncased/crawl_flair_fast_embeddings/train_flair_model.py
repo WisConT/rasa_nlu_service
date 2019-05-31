@@ -8,7 +8,7 @@ def train_model():
     columns = {0: 'text', 3: 'ner'}
 
     dirname = os.path.dirname(__file__)  # NOQA: E402
-    data_folder = os.path.join(dirname, '../../../../../data/processed/onto5/cased')
+    data_folder = os.path.join(dirname, '../../../../../data/processed/onto5/uncased')
 
     corpus = NLPTaskDataFetcher.load_column_corpus(
         data_folder,
@@ -24,8 +24,8 @@ def train_model():
 
     embedding_types = [
         WordEmbeddings('crawl'),
-        FlairEmbeddings('news-forward', use_cache=True),
-        FlairEmbeddings('news-backward', use_cache=True)
+        FlairEmbeddings('news-forward-fast', use_cache=True),
+        FlairEmbeddings('news-backward-fast', use_cache=True)
     ]
 
     embeddings = StackedEmbeddings(embeddings=embedding_types)
@@ -39,7 +39,7 @@ def train_model():
 
     trainer = ModelTrainer(tagger, corpus)
 
-    model_location = os.path.join(dirname, '../../../../../models/flair/onto_cased/glove_flair_embeddings')
+    model_location = os.path.join(dirname, '../../../../../models/flair/onto_uncased/crawl_flair_fast_embeddings')
 
     trainer.train(
         model_location,
