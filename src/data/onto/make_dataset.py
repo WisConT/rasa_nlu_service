@@ -34,7 +34,7 @@ def parse_file(filename):
 
             split_line = line.split()
 
-            if split_line[0] == '-DOCUMENT-':
+            if split_line[0] == '-DOCSTART-':
                 if len(document) > 0:
                     documents.append(document)
                     document = []
@@ -45,7 +45,7 @@ def parse_file(filename):
                 sentence['full_text'] = sentence['full_text'] + ' '
 
             sentence['words'].append(split_line[0])
-            sentence['tags'].append(split_line[1])
+            sentence['tags'].append(split_line[3])
             sentence['full_text'] = sentence['full_text'] + split_line[0]
 
         print("File parsed")
@@ -54,7 +54,6 @@ def parse_file(filename):
 
         return documents
 
-# TODO: make sure data is loaded as multiple documents
 def get_dataset(cased=True):
     print("Fetching dataset...")
 
@@ -62,11 +61,11 @@ def get_dataset(cased=True):
 
     dirname = os.path.dirname(__file__)  # NOQA: E402
     test_file_path = os.path.join(
-        dirname, '../../../data/processed/onto5/flair/' + cased_path + '/test.iob2')
+        dirname, '../../../data/processed/onto5/' + cased_path + '/test.conll')
     train_file_path = os.path.join(
-        dirname, '../../../data/processed/onto5/flair/' + cased_path + '/train.iob2')
+        dirname, '../../../data/processed/onto5/' + cased_path + '/train.conll')
     dev_file_path = os.path.join(
-        dirname, '../../../data/processed/onto5/flair/' + cased_path + '/dev.iob2')
+        dirname, '../../../data/processed/onto5/' + cased_path + '/dev.conll')
 
     test = parse_file(test_file_path)
     train = parse_file(train_file_path)
