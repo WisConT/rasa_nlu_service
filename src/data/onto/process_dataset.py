@@ -25,7 +25,7 @@ def write_array_to_conll_file(documents, file_path, separator=' ', word_ending='
 def train_test_dev_split(data):
     """ split of 0.7/0.15/0.15 """
     X_train, X_test_dev = train_test_split(data, test_size=0.3, shuffle=True, random_state=42)
-    X_test, X_dev = train_test_split(X_test_dev, test_size=0.5, shuffle=False, random_state=42)
+    X_test, X_dev = train_test_split(X_test_dev, test_size=0.5, shuffle=False)
 
     return X_train, X_test, X_dev
 

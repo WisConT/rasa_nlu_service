@@ -67,22 +67,22 @@ def get_formatted_data(results_path):
 
 
 def evaluate_results():
-    df_uncased = get_formatted_data("results/onto_uncased_entity_specific.json")
-    df_cased = get_formatted_data("results/onto_cased_entity_specific.json")
+    df_uncased_model = get_formatted_data("results/onto_uncased_model_cased_data.json")
+    df_cased_model = get_formatted_data("results/onto_cased_model_uncased_data.json")
 
-    avg_uncased = df_uncased['f1']['corpus_average']
-    df_uncased_f1 = df_uncased['f1'].drop('corpus_average')
+    avg_uncased = df_uncased_model['f1']['corpus_average']
+    df_uncased_f1 = df_uncased_model['f1'].drop('corpus_average')
 
-    avg_cased = df_cased['f1']['corpus_average']
-    df_cased_f1 = df_cased['f1'].drop('corpus_average')
+    avg_cased = df_cased_model['f1']['corpus_average']
+    df_cased_f1 = df_cased_model['f1'].drop('corpus_average')
 
-    print("corpus avg (uncased): " + str(avg_uncased))
-    print("corpus avg (cased): " + str(avg_cased))
+    print("corpus avg (uncased model): " + str(avg_uncased))
+    print("corpus avg (cased model): " + str(avg_cased))
 
     joined_df = pd.DataFrame({
-        "uncased": df_uncased_f1,
-        "cased": df_cased_f1
-    }).sort_values('cased')
+        "Uncased Model - Cased Data": df_uncased_f1,
+        "Cased Model - Uncased Data": df_cased_f1
+    }).sort_values('Uncased Model - Cased Data')
 
     ax1 = joined_df.plot.bar()
     # ax1.axhline(y=avg_uncased, color='royalblue', linestyle='--', zorder=0.01, linewidth=1)
@@ -99,6 +99,6 @@ def evaluate_results():
 
 
 if __name__ == "__main__":
-    # calculate_test_results('../../../../models/spacy/onto_uncased/model-best', "results/onto_uncased_entity_specific.json", False)
-    # calculate_test_results('../../../../models/spacy/onto_cased/model-best', "results/onto_cased_entity_specific.json", True)
+    # calculate_test_results('../../../../models/spacy/onto_uncased/model-best', "results/onto_uncased_model_cased_data.json", True)
+    # calculate_test_results('../../../../models/spacy/onto_cased/model-best', "results/onto_cased_model_uncased_data.json", False)
     evaluate_results()
