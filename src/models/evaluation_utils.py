@@ -22,13 +22,16 @@ dirname = os.path.dirname(__file__)
 nlu_data_dir = os.path.join(dirname, '../../data/processed')
 nlu_resources_dir = os.path.join(dirname, './resources')
 
+all_onto_labels = ["gpe", "loc", "fac", "org", "norp", "work_of_art", "person", "product", "event",
+                   "law", "language", "date", "time", "percent", "money", "quantity", "ordinal", "cardinal", "o"]
+all_conll_labels = ["per", "org", "loc", "misc", "o"]
+
+
 conll_labels = ["per", "loc", "o"]
 onto_labels = ["person", "loc", "o"]
 neel_labels = ["person\n", "location\n", "o"]
-# MANY TO ONE MAPPING FOR WNUT
-# spacy -> wnut
-wnut_labels = ["location", "group",
-               "creative-work", "person", "product", "o"]
+wnut_labels = ["person", "location", "o"]
+
 wnut_mappings = {
     "gpe": "location",
     "loc": "location",
@@ -58,7 +61,7 @@ onto_mappings = {
     "org": ["org"],
     "norp": ["o"],
     "work_of_art": ["o"],
-    "person": ["person"],
+    "person": ["per"],
     "product": ["o"],
     "event": ["o"],
     "law": ["o"],
@@ -102,6 +105,14 @@ neel_mappings["loc"] = ["location\n"]
 neel_mappings["fac"] = ["location\n"]
 neel_mappings["org"] = ["org\n"]
 
+conll_to_wnut_mappings = {
+    "per": ["person"],
+    "org": ["group"],
+    "loc": ["location"],
+    "misc": ["creative-work"],
+    "misc": ["product"],
+    "o": ["o"]
+}
 
 
 def get_match_result(targets, predictions):
@@ -183,17 +194,21 @@ def align_all_predictions(targets, predictions, tokens):
     return prediction_per_document, concat_targets, concat_predictions
 
 
-def get_statistics(json_per_document, concat_targets, concat_predictions):
+def get_statistics(json_per_document, concat_targets, concat_predictions, labels, mapping):
     from sklearn.metrics import precision_recall_fscore_support as pr
-    prec, rec, f1, _ = pr([onto_mappings[p.lower()] for p in concat_predictions],
-                          ["loc" if t.lower() == "gpe" else t.lower() for t in concat_targets], labels=onto_labels)
+    if mapping is None:
+        prec, rec, f1, _ = pr([p.lower() for p in concat_predictions],
+                              [t.lower() for t in concat_targets], labels=labels)
+    else:
+        prec, rec, f1, _ = pr([mapping[p.lower()] for p in concat_predictions],
+                              [t.lower() for t in concat_targets], labels=labels)
     # prec, rec, f1, _ = pr([p.lower() for p in concat_predictions],
     #                       [wnut_mappings[t.lower()] for t in concat_targets], labels=wnut_labels)
 
     return {"precision": prec, "recall": rec, "f1": f1}
 
 
-def evaluate_test_data(interpreter, test_data):
+def evaluate_test_data(interpreter, test_data, dataset_name):
     """
     Evaluate test data given a trained interpreter
 
@@ -217,7 +232,18 @@ def evaluate_test_data(interpreter, test_data):
     per_document, all_t, all_p = align_all_predictions(
         entity_targets, entity_predictions, tokens)
 
-    statistics = get_statistics(per_document, all_t, all_p)
+    if dataset_name == "onto5":
+        mapping = onto_mappings
+        labels = onto_labels
+    elif dataset_name == "conll_2003":
+        # mapping = conll_to_wnut_mappings
+        # labels = wnut_labels
+        mapping = None
+        labels = conll_labels
+    elif dataset_name == "wnut_2017":
+        labels = wnut_labels
+
+    statistics = get_statistics(per_document, all_t, all_p, labels, mapping)
     # err = 1 - sum([aligned_predictions[i]["match_cat"]
     #    for i in range(0, len(aligned_predictions))])/len(aligned_predictions)
 
@@ -260,7 +286,7 @@ def crossvalidation(data_path, config_path, folds=10, verbose=False):
     # print("Average error: " + str(err/folds))
 
 
-def evaluate(config_path, test_data_path):
+def evaluate(config_path, test_data_path, dataset_name):
     """
     Evaluate test data given model derived from Rasa NLU training data and pipeline configuration,
     printing f1 scores per entity
@@ -279,7 +305,7 @@ def evaluate(config_path, test_data_path):
     print("Training model with training data")
     interpreter = trainer.train(TrainingData())
     print("Evaluating test data with trained model")
-    res = evaluate_test_data(interpreter, test_data)
+    res = evaluate_test_data(interpreter, test_data, dataset_name)
     print("statistics: " + str(res["stats"]))
 
 
@@ -305,43 +331,20 @@ def evaluate_string(config_path, sample_string):
     # train_data_path=("training data", "positional", None, str),
     setting=("setting", "positional", None, str),
     config=("config", "positional", None, str),
-    test_data_path=("test data", "positional", None, str),
-    test_string=("string", "positional", None, str)
+    dataset_name=("model", "positional", None, str),
+    test_data_path=("test data", "positional", None, str)
+    # test_string=("string", "option", "str", None, str)
 )
-def main(setting=None, config=None, test_data_path=None, test_string=None):
+def main(setting=None, config=None, dataset_name=None, test_data_path=None, test_string=None):
     # if setting == "crossvalidation":
         # crossvalidation(nlu_data_dir + train_data_path,
         #                 nlu_resources_dir + config, folds=2, verbose=True)
-    # el
+    #
     if setting == "evaluate":
-        evaluate(nlu_resources_dir + config,
-                 nlu_data_dir + test_data_path)
+        evaluate(config, test_data_path, dataset_name)
     elif setting == "evaluate_string":
-        evaluate_string(nlu_resources_dir + config, test_string)
+        evaluate_string(config, test_string)
 
 
 if __name__ == '__main__':
     plac.call(main)
-
-# if __name__ == "__main__":
-#     parser = argparse.ArgumentParser(description="evaluation utilities")
-#     parser.add_argument('--crossvalidation',
-#                         help="use crossvalidation on data, printing statistics", action="store_true")
-#     parser.add_argument('--evaluate',
-#                         help="train model with training data and evaluate on test data, printing statistics", action="store_true")
-#     parser.add_argument('--string',
-#                         help="train model with training data and evaluate on string", action="store_true")
-#     args = parser.parse_args()
-
-#     if args.crossvalidation and args.evaluate:
-#         print("Cannot use options --crossvalidation and --evaluate at the same time")
-#     elif args.crossvalidation:
-#         crossvalidation(nlu_data_dir + "/wnut_2017/wnut-train-nlu-data.json",
-#                         nlu_resources_dir + "/nlu-config.yml", folds=2, verbose=True)
-#     elif args.evaluate:
-#         evaluate(nlu_data_dir + "/wnut_2017/wnut-train-nlu-data.json",
-#                  nlu_resources_dir + "/nlu-config.yml",
-#                  nlu_data_dir + "/wnut_2017/wnut-test-nlu-data.json")
-#     elif args.string:
-#         evaluate_string(nlu_data_dir + "/wnut_2017/wnut-train-nlu-data.json",
-#                         nlu_resources_dir + "/similarity-config.yml", "I love the Arctic Monkeys, they are such a good band")

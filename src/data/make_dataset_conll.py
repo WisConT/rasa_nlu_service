@@ -46,7 +46,7 @@ def parse_file(filename):
             sentence['full_text'] = sentence['full_text'] + split_line[0]
 
         print("File parsed")
-        
+
         documents = list(map(lambda doc: add_entities(doc), documents))
 
         return documents

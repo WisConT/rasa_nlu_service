@@ -29,7 +29,7 @@ def add_entities(document):
                 # find any further tags that relate to the current tag
                 # (start with I)
                 j = i + 1
-                while j < len(words) and (tags[j][0] == 'I' or words[j] == "'s"):
+                while j < len(words) and (tags[j][0] == 'I'):
                     # update the value of the entity to include next word
                     entity['value'] = entity['value'] + ' ' + words[j]
 

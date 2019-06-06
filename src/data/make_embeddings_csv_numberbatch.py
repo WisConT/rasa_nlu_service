@@ -4,11 +4,18 @@ import numpy as np
 
 dirname = os.path.dirname(__file__)
 embedding_dir = os.path.join(dirname, '../../data/embeddings/numberbatch')
+glove_dir = os.path.join(dirname, '../../data/embeddings/glove')
 
 
 def generate_numberbatch_csv(txt_path, csv_path):
     read = pd.read_csv(txt_path, sep=" ", skiprows=[
-                       0], names=["id"] + range(300))
+                       0], names=["id"] + [i for i in range(300)])
+    read.to_csv(path_or_buf=csv_path, index=True)
+
+
+def generate_glove_csv(txt_path, csv_path):
+    read = pd.read_csv(txt_path, sep=" ", names=[
+                       "id"] + [i for i in range(300)], quotechar=None, quoting=3)
     read.to_csv(path_or_buf=csv_path, index=True)
 
 
@@ -39,11 +46,15 @@ def decapitate_csv(inp, out):
     with open(inp, 'r') as fin:
         data = [l.replace(",", " ") for l in fin.read().splitlines(True)]
     with open(out, 'w') as fout:
-        fout.writelines(data[1:])
+        fout.writelines(data[10:])
 
 
 if __name__ == "__main__":
+    # generate_numberbatch_csv(
+    #     embedding_dir + '/numberbatch-en-17.06.txt', embedding_dir + '/numberbatch.csv')
+    decapitate_csv(glove_dir + '/glove.6B.300d.txt',
+                   glove_dir + '/glove.6B.300d.txt')
     generate_numberbatch_csv(
-        embedding_dir + '/numberbatch-en-17.06.txt', embedding_dir + '/numberbatch.csv')
+        glove_dir + '/glove.6B.300d.txt', glove_dir + '/glove.csv')
     # generate_english_numberbatch_csv(
     #     embedding_dir + '/numberbatch.csv', embedding_dir + '/numberbatch_eng.csv')

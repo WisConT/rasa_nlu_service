@@ -86,21 +86,30 @@ def rasa_data_to_spacy_data(rasa_data, spacy_data):
 @plac.annotations(
     model=("Model name. Defaults to blank 'en' model.", "option", "m", str),
     output_dir=("Optional output directory", "option", "o", Path),
-    n_iter=("Number of training iterations", "option", "n", int),
+    training_data_path=("Training data", "option", "td", str),
+    valid_data_path=("Validation data", "option", "vd", str),
+    extra_feature=("Extra feature", "option", "ef", str)
 )
-def main(model=None, output_dir=None, n_iter=100):
+def main(model=None, output_dir=None, training_data_path=None, valid_data_path=None, n_iter=100, extra_feature="shape"):
     train_loss = []
     valid_loss = []
-    # pd.DataFrame(np.array([train_loss, valid_loss])).to_csv("./file.csv")
-    data = load_data(
-        nlu_data_dir + "/onto5/onto-train-nlu-data.json")
-    train_data, test_data = data.train_test_split(train_frac=0.9)  # 0.9
-    valid_data, _ = test_data.train_test_split(train_frac=1)  # 1
+    train_data = load_data(training_data_path)
+    valid_data = load_data(valid_data_path)
+
+    if extra_feature == "shape":
+        tok2vec_args = {'dep': False, 'sem_diff': False,
+                        'width': 96, 'static': False, 'pretrained_width': 300}
+    elif extra_feature == "dep":
+        tok2vec_args = {'dep': True, 'sem_diff': False,
+                        'width': 96, 'static': False, 'pretrained_width': 300}
+    elif extra_feature == "sem_diff":
+        tok2vec_args = {'dep': False, 'sem_diff': True,
+                        'width': 96, 'static': False, 'pretrained_width': 300}
+
+        # train_data, test_data = data.train_test_split(train_frac=0.9)  # 0.9
+        # valid_data, _ = test_data.train_test_split(train_frac=1)  # 1
     rasa_data_to_spacy_data(train_data, TRAIN_DATA)
     rasa_data_to_spacy_data(valid_data, VALID_DATA)
-
-    tok2vec_args = {'dep': False, 'sem_diff': False,
-                    'width': 96, 'static': False, 'pretrained_width': 300}
 
     print("Loading model...")
     nlp_en = spacy.load('en')
@@ -123,8 +132,6 @@ def main(model=None, output_dir=None, n_iter=100):
         print("en_core_web_sm model loaded")
     elif model == "en_lg_prune":
         nlp = Language().from_disk('./models/language/pruned_lg')
-        print("Number of keys:", len(nlp.vocab.vectors.keys()))
-        print("Number of values:", len(nlp.vocab.vectors))
     else:
         print("Unsupported language model")
         exit()
@@ -188,7 +195,13 @@ def main(model=None, output_dir=None, n_iter=100):
             a = [] if len(valid_loss) < 4 else valid_loss[-4:]
             if len(a) > 0 and a[0] < a[1] and a[1] < a[2] and a[2] < a[3]:
                 print("Overfitting")
-                break
+                checkpoint_dir = output_dir
+                if checkpoint_dir is not None:
+                    checkpoint_dir = Path(checkpoint_dir/str(itn))
+                    if not checkpoint_dir.exists():
+                        checkpoint_dir.mkdir()
+                    nlp.to_disk(checkpoint_dir)
+                    print("Saved model to", checkpoint_dir)
 
             if itn % 25 is 0:
                 checkpoint_dir = output_dir
