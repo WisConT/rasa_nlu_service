@@ -1,15 +1,13 @@
 import os
 import sys
+import json
 
-# parses the conll file into a formatted array
 dirname = os.path.dirname(__file__)  # NOQA: E402
-sys.path.append(os.path.join(dirname, '.'))  # NOQA: E402
+sys.path.append(os.path.join(dirname, '../'))  # NOQA: E402
 
 from utils import add_entities
 
-# parses the conll file into a formatted array
-
-
+# parses the onto notes data into a formatted array
 def parse_file(filename):
     print("Parsing file...")
 
@@ -58,10 +56,37 @@ def parse_file(filename):
         return documents
 
 
-def get_dataset():
-    print("Fetching dataset...")
-
+def get_test_file():
     dirname = os.path.dirname(__file__)  # NOQA: E402
+    test_file_path = os.path.join(
+        dirname, '../../../data/processed/onto5/uncased/train.conll')
+    
+    return parse_file(test_file_path)
 
-    return parse_file(os.path.join(
-        dirname, '../../data/interim/conll_2003/test.txt'))
+
+def get_entity_stats():
+    test_file = get_test_file()
+
+    meanings = {}
+
+    for document in test_file:
+        for sentence in document:
+            for entity in sentence['entities']:
+                if entity['value'] in meanings:
+                    meanings[entity['value']].append(entity['entity'])
+                else:
+                    meanings[entity['value']] = [entity['entity']]
+    
+    total_meanings = 0
+
+    for word, tags in meanings.items():
+        unique_meanings = len(list(set(tags)))
+        total_meanings += unique_meanings
+    
+    confusability = total_meanings / len(meanings.keys())
+
+    print(confusability)
+
+
+if __name__ == '__main__':
+    get_entity_stats()

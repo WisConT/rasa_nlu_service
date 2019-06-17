@@ -1,0 +1,45 @@
+{
+    "performance": {
+        "org": {
+            "true_positive": 462,
+            "false_positive": 198,
+            "false_negative": 1189,
+            "recall": 0.2798304058146578,
+            "precision": 0.7,
+            "f1": 0.3998269147555171
+        },
+        "loc": {
+            "true_positive": 888,
+            "false_positive": 180,
+            "false_negative": 768,
+            "recall": 0.5362318840579711,
+            "precision": 0.8314606741573034,
+            "f1": 0.6519823788546257
+        },
+        "per": {
+            "true_positive": 1102,
+            "false_positive": 58,
+            "false_negative": 0,
+            "recall": 1.0,
+            "precision": 0.95,
+            "f1": 0.9743589743589743
+        },
+        "corpus_average": {
+            "true_positive": 2452,
+            "false_positive": 436,
+            "false_negative": 1957,
+            "recall": 0.5561351780449082,
+            "precision": 0.8490304709141274,
+            "f1": 0.6720570097300261
+        }
+    },
+    "meta": {
+        "document_count": 230,
+        "sentence_count": 3442,
+        "words_count": 46165,
+        "entities_count": 5620
+    },
+    "entity_stats": {},
+    "time_taken": 397.43676495552063,
+    "average_eval_time": 0.11544316671117665
+}

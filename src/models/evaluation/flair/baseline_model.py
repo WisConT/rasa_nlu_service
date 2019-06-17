@@ -1,6 +1,7 @@
 from functools import reduce
 import os
 import time
+from flair.data import Sentence
 
 
 def entities_equal(pred, true, mappings={}):
@@ -29,19 +30,34 @@ def entities_equal(pred, true, mappings={}):
         True/False
     """
 
-    if pred.label_.lower() in mappings:
-        name_equal = true['entity'].lower() in mappings[pred.label_.lower()]
+    if pred['type'].lower() in mappings:
+        name_equal = true['entity'].lower() in mappings[pred['type'].lower()]
     else:
-        name_equal = pred.label_.lower() == true['entity'].lower()
+        name_equal = pred['type'].lower() == true['entity'].lower()
 
-    value_equal = pred.text == true['value']
-    value_similar = pred.text in true['value'] or true['value'] in pred.text
+    value_equal = pred['text'] == true['value']
+    value_similar = pred['text'] in true['value'] or true['value'] in pred['text']
 
-    range_equal = pred.start_char == true['start'] and pred.end_char == true['end']
+    range_equal = pred['start_pos'] == true['start'] and pred['end_pos'] == true['end']
     range_similar = \
-        pred.start_char <= true['start'] and pred.end_char >= true['end'] \
+        pred['start_pos'] <= true['start'] and pred['end_pos'] >= true['end'] \
         or \
-        true['start'] <= pred.start_char and true['end'] >= pred.end_char
+        true['start'] <= pred['start_pos'] and true['end'] >= pred['end_pos']
+
+    return (name_equal and value_equal and range_equal) or (name_equal and value_similar and range_similar)
+
+
+def flair_spacy_entity_equal(flair_entity, spacy_entity):
+    name_equal = flair_entity['type'].lower() == spacy_entity.label_.lower()
+
+    value_equal = flair_entity['text'] == spacy_entity.text
+    value_similar = flair_entity['text'] in spacy_entity.text or spacy_entity.text in flair_entity['text']
+
+    range_equal = flair_entity['start_pos'] == spacy_entity.start_char and flair_entity['end_pos'] == spacy_entity.end_char
+    range_similar = \
+        flair_entity['start_pos'] <= spacy_entity.start_char and flair_entity['end_pos'] >= spacy_entity.end_char \
+        or \
+        spacy_entity.start_char <= flair_entity['start_pos'] and spacy_entity.end_char >= flair_entity['end_pos']
 
     return (name_equal and value_equal and range_equal) or (name_equal and value_similar and range_similar)
 
@@ -89,11 +105,11 @@ def calculate_performance_statistics(statistics):
             entity_stats['f1'] = (2 * entity_stats['precision'] * entity_stats['recall']) / pr_re
         else:
             entity_stats['f1'] = 0
-    
+
     return statistics
 
 
-def get_statistics(documents, nlp, mappings={}, spacy_labels=None):
+def get_statistics(documents, flair_model, mappings={}, spacy_labels=None):
     """Given a list of documents in the format given from parse_file functions
     get the recall, precision and f1 scores for the documents.
 
@@ -105,6 +121,7 @@ def get_statistics(documents, nlp, mappings={}, spacy_labels=None):
     print("Calculating corpus statistics...")
 
     statistics = {}
+    entity_meanings = {}
 
     document_count = 0
     sentence_count = 0
@@ -112,7 +129,6 @@ def get_statistics(documents, nlp, mappings={}, spacy_labels=None):
     entities_count = 0
 
     entity_reference_count = {}
-    unidentified_entities = []
 
     eval_time = 0
     eval_count = 0
@@ -131,20 +147,35 @@ def get_statistics(documents, nlp, mappings={}, spacy_labels=None):
             words_count += len(sentence['words'])
 
             eval_start_timestamp = time.time()
-            result = nlp(sentence['full_text'])
+            sent = Sentence(sentence['full_text'])
+            flair_model.predict(sent)
+            result = sent.to_dict(tag_type='ner')
             eval_end_timestamp = time.time()
+
+            # spacy_result = spacy_model(sentence['full_text'])
 
             eval_time += eval_end_timestamp - eval_start_timestamp
             eval_count += 1
 
-            for predicted_entity in result.ents:
-                if spacy_labels is not None and predicted_entity.label_.lower() not in spacy_labels:
+            for predicted_entity in result['entities']:
+                if spacy_labels is not None and predicted_entity['type'].lower() not in spacy_labels:
                     continue
+                # spacy_found = False
+
+                # for spacy_entity in spacy_result.ents:
+                #     if flair_spacy_entity_equal(predicted_entity, spacy_entity):
+                #         spacy_found = True
+                
+                # if not spacy_found:
+                #     print("SPACY NOT FOUND:")
+                #     print(sentence['full_text'])
+                #     print(predicted_entity)
+
 
                 found = False
-                entity_name = predicted_entity.label_
+                entity_name = predicted_entity['type']
 
-                for true_entity in sentence['entities']:
+                for true_entity in sentence['entities']:         
                     if entities_equal(predicted_entity, true_entity, mappings):
                         found = True
                         entity_name = true_entity['entity']
@@ -172,16 +203,18 @@ def get_statistics(documents, nlp, mappings={}, spacy_labels=None):
                 else:
                     entity_reference_count[true_entity_value] = [true_entity_name]
 
+                if spacy_labels is not None and true_entity['entity'].lower() not in spacy_labels:
+                    continue
+
                 found = False
 
-                for predicted_entity in result.ents:
+                for predicted_entity in result['entities']:
                     if entities_equal(predicted_entity, true_entity, mappings):
                         found = True
                         break
 
                 if not found:
                     statistics = increment_field(statistics, true_entity_name, 'false_negative')
-                    unidentified_entities.append(true_entity_name)
 
         document_count += 1
     
@@ -202,13 +235,8 @@ def get_statistics(documents, nlp, mappings={}, spacy_labels=None):
         "entities_count": entities_count
     }
     entity_stats = {
-        "avg_entities_per_word": avg_entities_per_word
+        # "avg_entities_per_word": avg_entities_per_word
     }
-
-    for entity in entity_reference_count:
-        if len(entity_reference_count[entity]) > 1 and entity in unidentified_entities:
-            print("entity: " + entity)
-            print("definitions: " + str(entity_reference_count[entity]))
 
     return {
         "performance": perf_stats,

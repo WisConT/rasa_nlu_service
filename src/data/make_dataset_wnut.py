@@ -1,8 +1,11 @@
 import os
-from utils import add_entities
+import sys
 
 # parses the conll file into a formatted array
+dirname = os.path.dirname(__file__)  # NOQA: E402
+sys.path.append(os.path.join(dirname, '.'))  # NOQA: E402
 
+from utils import add_entities
 
 def parse_file(filename):
     print("Parsing file...")
@@ -19,7 +22,7 @@ def parse_file(filename):
 
         # 1 line = 1 word
         for line in f:
-            if line == "\n":
+            if line == "\n" or len(line.split()) == 0:
                 if len(sentence['words']) > 0:
                     document.append(sentence)
                     sentence = {
@@ -60,5 +63,9 @@ def get_dataset():
 
     dirname = os.path.dirname(__file__)  # NOQA: E402
 
-    return parse_file(os.path.join(
+    test = parse_file(os.path.join(
         dirname, '../../data/interim/wnut_2017/test.txt'))
+    train = parse_file(os.path.join(
+        dirname, '../../data/interim/wnut_2017/train.txt'))
+
+    return test + train

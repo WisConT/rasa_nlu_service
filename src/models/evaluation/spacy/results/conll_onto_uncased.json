@@ -1,0 +1,55 @@
+{
+    "performance": {
+        "org": {
+            "true_positive": 172,
+            "false_positive": 268,
+            "false_negative": 1488,
+            "recall": 0.10361445783132531,
+            "precision": 0.39090909090909093,
+            "f1": 0.16380952380952382
+        },
+        "loc": {
+            "true_positive": 732,
+            "false_positive": 274,
+            "false_negative": 926,
+            "recall": 0.44149577804583834,
+            "precision": 0.7276341948310139,
+            "f1": 0.5495495495495496
+        },
+        "per": {
+            "true_positive": 235,
+            "false_positive": 244,
+            "false_negative": 1369,
+            "recall": 0.14650872817955113,
+            "precision": 0.4906054279749478,
+            "f1": 0.2256361017762842
+        },
+        "misc": {
+            "true_positive": 0,
+            "false_positive": 0,
+            "false_negative": 694,
+            "recall": 0.0,
+            "precision": 0,
+            "f1": 0
+        },
+        "corpus_average": {
+            "true_positive": 1139,
+            "false_positive": 786,
+            "false_negative": 4477,
+            "recall": 0.20281339031339032,
+            "precision": 0.5916883116883117,
+            "f1": 0.30208195199575655
+        }
+    },
+    "meta": {
+        "document_count": 230,
+        "sentence_count": 3442,
+        "words_count": 46165,
+        "entities_count": 5620
+    },
+    "entity_stats": {
+        "avg_entities_per_word": 1.027037617554859
+    },
+    "time_taken": 11.151064157485962,
+    "average_eval_time": 0.0031569804790614305
+}

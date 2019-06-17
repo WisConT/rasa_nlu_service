@@ -1,0 +1,175 @@
+{
+    "performance": {
+        "org": {
+            "true_positive": 0,
+            "false_positive": 1864,
+            "false_negative": 0,
+            "recall": 0,
+            "precision": 0.0,
+            "f1": 0
+        },
+        "location": {
+            "true_positive": 335,
+            "false_positive": 179,
+            "false_negative": 367,
+            "recall": 0.4772079772079772,
+            "precision": 0.6517509727626459,
+            "f1": 0.550986842105263
+        },
+        "date": {
+            "true_positive": 0,
+            "false_positive": 2262,
+            "false_negative": 0,
+            "recall": 0,
+            "precision": 0.0,
+            "f1": 0
+        },
+        "cardinal": {
+            "true_positive": 0,
+            "false_positive": 1174,
+            "false_negative": 0,
+            "recall": 0,
+            "precision": 0.0,
+            "f1": 0
+        },
+        "group": {
+            "true_positive": 153,
+            "false_positive": 0,
+            "false_negative": 272,
+            "recall": 0.36,
+            "precision": 1.0,
+            "f1": 0.5294117647058824
+        },
+        "person": {
+            "true_positive": 593,
+            "false_positive": 760,
+            "false_negative": 496,
+            "recall": 0.5445362718089991,
+            "precision": 0.43828529194382854,
+            "f1": 0.48566748566748563
+        },
+        "creative-work": {
+            "true_positive": 34,
+            "false_positive": 111,
+            "false_negative": 248,
+            "recall": 0.12056737588652482,
+            "precision": 0.23448275862068965,
+            "f1": 0.1592505854800937
+        },
+        "norp": {
+            "true_positive": 0,
+            "false_positive": 111,
+            "false_negative": 0,
+            "recall": 0,
+            "precision": 0.0,
+            "f1": 0
+        },
+        "ordinal": {
+            "true_positive": 0,
+            "false_positive": 190,
+            "false_negative": 0,
+            "recall": 0,
+            "precision": 0.0,
+            "f1": 0
+        },
+        "fac": {
+            "true_positive": 0,
+            "false_positive": 79,
+            "false_negative": 0,
+            "recall": 0,
+            "precision": 0.0,
+            "f1": 0
+        },
+        "corporation": {
+            "true_positive": 114,
+            "false_positive": 0,
+            "false_negative": 173,
+            "recall": 0.397212543554007,
+            "precision": 1.0,
+            "f1": 0.5685785536159601
+        },
+        "product": {
+            "true_positive": 20,
+            "false_positive": 75,
+            "false_negative": 249,
+            "recall": 0.07434944237918216,
+            "precision": 0.21052631578947367,
+            "f1": 0.10989010989010989
+        },
+        "money": {
+            "true_positive": 0,
+            "false_positive": 193,
+            "false_negative": 0,
+            "recall": 0,
+            "precision": 0.0,
+            "f1": 0
+        },
+        "percent": {
+            "true_positive": 0,
+            "false_positive": 33,
+            "false_negative": 0,
+            "recall": 0,
+            "precision": 0.0,
+            "f1": 0
+        },
+        "time": {
+            "true_positive": 0,
+            "false_positive": 589,
+            "false_negative": 0,
+            "recall": 0,
+            "precision": 0.0,
+            "f1": 0
+        },
+        "event": {
+            "true_positive": 0,
+            "false_positive": 45,
+            "false_negative": 0,
+            "recall": 0,
+            "precision": 0.0,
+            "f1": 0
+        },
+        "law": {
+            "true_positive": 0,
+            "false_positive": 9,
+            "false_negative": 0,
+            "recall": 0,
+            "precision": 0.0,
+            "f1": 0
+        },
+        "quantity": {
+            "true_positive": 0,
+            "false_positive": 43,
+            "false_negative": 0,
+            "recall": 0,
+            "precision": 0.0,
+            "f1": 0
+        },
+        "language": {
+            "true_positive": 0,
+            "false_positive": 4,
+            "false_negative": 0,
+            "recall": 0,
+            "precision": 0.0,
+            "f1": 0
+        },
+        "corpus_average": {
+            "true_positive": 1249,
+            "false_positive": 7721,
+            "false_negative": 1805,
+            "recall": 0.40897184020956123,
+            "precision": 0.13924191750278705,
+            "f1": 0.20775116433799068
+        }
+    },
+    "meta": {
+        "document_count": 4679,
+        "sentence_count": 4679,
+        "words_count": 86095,
+        "entities_count": 3053
+    },
+    "entity_stats": {
+        "avg_entities_per_word": 1.0101337657073368
+    },
+    "time_taken": 47.5199499130249,
+    "average_eval_time": 0.010071977842412053
+}

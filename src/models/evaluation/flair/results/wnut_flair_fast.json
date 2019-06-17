@@ -1,0 +1,173 @@
+{
+    "performance": {
+        "org": {
+            "true_positive": 0,
+            "false_positive": 308,
+            "false_negative": 0,
+            "recall": 0,
+            "precision": 0.0,
+            "f1": 0
+        },
+        "location": {
+            "true_positive": 234,
+            "false_positive": 86,
+            "false_negative": 464,
+            "recall": 0.335243553008596,
+            "precision": 0.73125,
+            "f1": 0.45972495088408644
+        },
+        "date": {
+            "true_positive": 0,
+            "false_positive": 1652,
+            "false_negative": 0,
+            "recall": 0,
+            "precision": 0.0,
+            "f1": 0
+        },
+        "cardinal": {
+            "true_positive": 0,
+            "false_positive": 651,
+            "false_negative": 0,
+            "recall": 0,
+            "precision": 0.0,
+            "f1": 0
+        },
+        "group": {
+            "true_positive": 68,
+            "false_positive": 0,
+            "false_negative": 359,
+            "recall": 0.1592505854800937,
+            "precision": 1.0,
+            "f1": 0.2747474747474748
+        },
+        "person": {
+            "true_positive": 427,
+            "false_positive": 285,
+            "false_negative": 658,
+            "recall": 0.3935483870967742,
+            "precision": 0.5997191011235955,
+            "f1": 0.4752365052865888
+        },
+        "creative-work": {
+            "true_positive": 9,
+            "false_positive": 35,
+            "false_negative": 273,
+            "recall": 0.031914893617021274,
+            "precision": 0.20454545454545456,
+            "f1": 0.05521472392638037
+        },
+        "norp": {
+            "true_positive": 0,
+            "false_positive": 42,
+            "false_negative": 0,
+            "recall": 0,
+            "precision": 0.0,
+            "f1": 0
+        },
+        "ordinal": {
+            "true_positive": 0,
+            "false_positive": 216,
+            "false_negative": 0,
+            "recall": 0,
+            "precision": 0.0,
+            "f1": 0
+        },
+        "corporation": {
+            "true_positive": 64,
+            "false_positive": 0,
+            "false_negative": 223,
+            "recall": 0.2229965156794425,
+            "precision": 1.0,
+            "f1": 0.3646723646723647
+        },
+        "product": {
+            "true_positive": 4,
+            "false_positive": 5,
+            "false_negative": 265,
+            "recall": 0.01486988847583643,
+            "precision": 0.4444444444444444,
+            "f1": 0.02877697841726619
+        },
+        "money": {
+            "true_positive": 0,
+            "false_positive": 44,
+            "false_negative": 0,
+            "recall": 0,
+            "precision": 0.0,
+            "f1": 0
+        },
+        "percent": {
+            "true_positive": 0,
+            "false_positive": 12,
+            "false_negative": 0,
+            "recall": 0,
+            "precision": 0.0,
+            "f1": 0
+        },
+        "law": {
+            "true_positive": 0,
+            "false_positive": 5,
+            "false_negative": 0,
+            "recall": 0,
+            "precision": 0.0,
+            "f1": 0
+        },
+        "time": {
+            "true_positive": 0,
+            "false_positive": 540,
+            "false_negative": 0,
+            "recall": 0,
+            "precision": 0.0,
+            "f1": 0
+        },
+        "event": {
+            "true_positive": 0,
+            "false_positive": 21,
+            "false_negative": 0,
+            "recall": 0,
+            "precision": 0.0,
+            "f1": 0
+        },
+        "fac": {
+            "true_positive": 0,
+            "false_positive": 31,
+            "false_negative": 0,
+            "recall": 0,
+            "precision": 0.0,
+            "f1": 0
+        },
+        "quantity": {
+            "true_positive": 0,
+            "false_positive": 19,
+            "false_negative": 0,
+            "recall": 0,
+            "precision": 0.0,
+            "f1": 0
+        },
+        "language": {
+            "true_positive": 0,
+            "false_positive": 3,
+            "false_negative": 0,
+            "recall": 0,
+            "precision": 0.0,
+            "f1": 0
+        },
+        "corpus_average": {
+            "true_positive": 806,
+            "false_positive": 3955,
+            "false_negative": 2242,
+            "recall": 0.26443569553805774,
+            "precision": 0.16929216551144718,
+            "f1": 0.20642847995902167
+        }
+    },
+    "meta": {
+        "document_count": 4679,
+        "sentence_count": 4679,
+        "words_count": 86095,
+        "entities_count": 3053
+    },
+    "entity_stats": {},
+    "time_taken": 1636.8246178627014,
+    "average_eval_time": 0.349680053446379
+}
