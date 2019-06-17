@@ -15,20 +15,50 @@ from data.onto.make_dataset import get_dataset
 from baseline_model import get_statistics, entities_equal
 
 
+def get_confusing_entities(dataset):
+    meanings = {}
+
+    for doc in dataset:
+        for sentence in doc:
+            for entity in sentence['entities']:
+                if entity['value'] not in meanings:
+                    meanings[entity['value']] = {}
+                
+                if entity['entity'] not in meanings[entity['value']]:
+                    meanings[entity['value']][entity['entity']] = []
+                
+                meanings[entity['value']][entity['entity']].append(sentence)
+                meanings[entity['value']]['sentence'] = sentence
+
+    new_doc = []
+
+    for token in meanings:
+        n_meanings = len(meanings[token].keys())
+        
+        if n_meanings > 1:
+            new_doc.append([meanings[token]['sentence']])
+    
+    print(len(new_doc))
+    return new_doc
+
+
+
 def calculate_test_results(model_path, results_path, cased=True):
     test, train, dev = get_dataset(cased=cased)
 
+    new_test = get_confusing_entities(test)
+
     model = SequenceTagger.load_from_file(model_path)
 
-    statistics = get_statistics(test, model)
+    statistics = get_statistics(new_test, model)
 
     print("statistics: ")
     print(json.dumps(statistics, indent=4))
 
-    results_file = os.path.join(dirname, results_path)
-    f = open(results_file, "w+")
-    f.write(json.dumps(statistics, indent=4))
-    f.close()
+    # results_file = os.path.join(dirname, results_path)
+    # f = open(results_file, "w+")
+    # f.write(json.dumps(statistics, indent=4))
+    # f.close()
 
 
 def get_formatted_data(results_path):

@@ -70,6 +70,8 @@ def evaluate_results(data_path):
     avg = df['f1']['corpus_average']
     df_f1 = df['f1'].drop('corpus_average').sort_values()
 
+    df_f1 = df_f1 * 100
+
     print("corpus total f1: " + str(avg))
 
     ax1 = df_f1.plot.bar()
@@ -100,9 +102,9 @@ def evaluate_results_dual():
     print("corpus total (cased model): " + str(avg_cased))
 
     joined_df = pd.DataFrame({
-        "Uncased": df_uncased_f1,
-        "Cased": df_cased_f1
-    }).sort_values('Cased')
+        "onto_uncased": df_uncased_f1 * 100,
+        "onto_cased": df_cased_f1 * 100
+    }).sort_values('onto_cased')
 
     ax1 = joined_df.plot.bar()
     # ax1.axhline(y=avg_uncased, color='royalblue', linestyle='--', zorder=0.01, linewidth=1)
@@ -123,8 +125,8 @@ if __name__ == "__main__":
     uncased_path = os.path.join(dirname, '../../../../models/spacy/onto_uncased/model-best')
     cased_path = os.path.join(dirname, '../../../../models/spacy/onto_cased/model-best')
 
-    calculate_test_results('en_core_web_lg', 'results/onto_uncased_spacy_en_core_web_lg.json', False)
-    # evaluate_results('results/spacy_en_core_web_lg.json')
+    # calculate_test_results('en_core_web_lg', 'results/onto_uncased_spacy_en_core_web_lg.json', False)
+    # evaluate_results('results/onto_uncased_spacy_en_core_web_sm.json')
     # calculate_test_results(uncased_path, "results/onto_uncased_spacy_en_core_web_lg.json", False)
     # calculate_test_results(cased_path, "results/onto_cased_entity_specific.json", True)
-    # evaluate_results_dual()
+    evaluate_results_dual()
