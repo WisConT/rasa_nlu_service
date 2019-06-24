@@ -1,6 +1,6 @@
 Github: https://github.com/WisConT/rasa_nlu_service/tree/jason
 
-Some of the code in the /src/data and /src/models directory was written by Tim Green, the other contributor to the rasa_nlu_service GitHub. These include some files of the form "/src/data/make_dataset_*" and "/src/models/baseline_*" as they were used for his evaluation of the datasets. For my project, I evaluate models differently but I made use of some of methods in his code to extract documents from the external datasets.
+Some of the code in the /src/data and /src/models directory was written by Tim Green, the other contributor to the rasa_nlu_service GitHub. These include several files of the form "/src/data/make_dataset_*" and "/src/models/baseline_*" as they were used for his evaluation of the datasets. For my project, I evaluate models differently but I made use of some of methods in his code to extract documents from the external datasets.
 
 Inspirations for code are noted where indicated.
 
