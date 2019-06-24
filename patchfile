@@ -1,0 +1,857 @@
+diff --git a/pyproject.toml b/pyproject.toml
+deleted file mode 100644
+index 80bb5905..00000000
+--- a/pyproject.toml
++++ /dev/null
+@@ -1,10 +0,0 @@
+-[build-system]
+-requires = ["setuptools",
+-            "wheel>0.32.0.<0.33.0",
+-            "Cython",
+-            "cymem>=2.0.2,<2.1.0",
+-            "preshed>=2.0.1,<2.1.0",
+-            "murmurhash>=0.28.0,<1.1.0",
+-            "thinc==7.0.0.dev6",
+-            ]
+-build-backend = "setuptools.build_meta"
+diff --git a/spacy/_ml.py b/spacy/_ml.py
+index 349b88df..fdeedc50 100644
+--- a/spacy/_ml.py
++++ b/spacy/_ml.py
+@@ -23,7 +23,7 @@ from thinc.describe import Dimension, Synapses, Biases, Gradient
+ from thinc.neural._classes.affine import _set_dimensions_if_needed
+ import thinc.extra.load_nlp
+ 
+-from .attrs import ID, ORTH, LOWER, NORM, PREFIX, SUFFIX, SHAPE
++from .attrs import ID, ORTH, LOWER, NORM, PREFIX, SUFFIX, SHAPE, DEP, PROB
+ from .errors import Errors
+ from . import util
+ 
+@@ -309,13 +309,18 @@ def PyTorchBiLSTM(nO, nI, depth, dropout=0.2):
+     return with_square_sequences(PyTorchWrapperRNN(model))
+ 
+ 
++# EDITED
+ def Tok2Vec(width, embed_size, **kwargs):
+     pretrained_vectors = kwargs.get("pretrained_vectors", None)
++    pretrained_width = kwargs.get("pretrained_width", 96)
++    dependency = kwargs.get("dep", False)
++    sem_diff = kwargs.get("sem_diff", False)
++    static = kwargs.get("static", False)
+     cnn_maxout_pieces = kwargs.get("cnn_maxout_pieces", 3)
+     subword_features = kwargs.get("subword_features", True)
+     conv_depth = kwargs.get("conv_depth", 4)
+     bilstm_depth = kwargs.get("bilstm_depth", 0)
+-    cols = [ID, NORM, PREFIX, SUFFIX, SHAPE, ORTH]
++    cols = [ID, NORM, PREFIX, SUFFIX, SHAPE, ORTH, DEP, PROB]
+     with Model.define_operators(
+         {">>": chain, "|": concatenate, "**": clone, "+": add, "*": reapply}
+     ):
+@@ -330,28 +335,69 @@ def Tok2Vec(width, embed_size, **kwargs):
+             shape = HashEmbed(
+                 width, embed_size // 2, column=cols.index(SHAPE), name="embed_shape"
+             )
++            dep = HashEmbed(
++                width, embed_size // 2, column=cols.index(DEP), name="embed_dep"
++            )
++            sd = HashEmbed(
++                width, embed_size // 2, column=cols.index(PROB), name="embed_dep"
++            )
+         else:
+             prefix, suffix, shape = (None, None, None)
++
+         if pretrained_vectors is not None:
+-            glove = StaticVectors(pretrained_vectors, width, column=cols.index(ID))
++            glove = StaticVectors(pretrained_vectors, pretrained_width, column=cols.index(ID))
+ 
+             if subword_features:
++                if (dependency):
++                    print ("Using dependency feature instead of shape")
++                    embed = uniqued(
++                        (glove | norm | prefix | suffix | dep) 
++                        >> LN(Maxout(width, pretrained_width + width * 4, pieces=3)), 
++                        column=cols.index(ORTH)
++                    )
++                elif (sem_diff):
++                    print ("Using sem_diff feature instead of shape")
++                    embed = uniqued(
++                        (glove | norm | prefix | suffix | sd) 
++                        >> LN(Maxout(width, pretrained_width + width * 4, pieces=3)), 
++                        column=cols.index(ORTH)
++                    )
++                # elif (static):
++                #     print ("TEST FEATURE")
++                #     embed = uniqued(
++                #         (glove | prefix | suffix | sd) 
++                #         >> LN(Maxout(width, pretrained_width + width * 3, pieces=3)), 
++                #         column=cols.index(ORTH)
++                #     )
++                else:
++                    print("Setting original embedding features")
++                    embed = uniqued(
++                        (glove | norm | prefix | suffix | shape)
++                        >> LN(Maxout(width, pretrained_width + width * 4, pieces=3)),
++                        column=cols.index(ORTH),
++                    )
++            else:
+                 embed = uniqued(
+-                    (glove | norm | prefix | suffix | shape)
+-                    >> LN(Maxout(width, width * 5, pieces=3)),
++                    (glove | norm) >> LN(Maxout(width, pretrained_width + width, pieces=3)),
+                     column=cols.index(ORTH),
+                 )
++        elif subword_features:
++            print("Not using pretrained")
++            if (sem_diff):
++                    print ("Using sem_diff feature instead of shape")
++                    embed = uniqued(
++                        (norm | prefix | suffix | sd) 
++                        >> LN(Maxout(width, width * 4, pieces=3)), 
++                        column=cols.index(ORTH)
++                    )
+             else:
++                print("Setting original embedding features")
+                 embed = uniqued(
+-                    (glove | norm) >> LN(Maxout(width, width * 2, pieces=3)),
++                    (norm | prefix | suffix | shape)
++                    >> LN(Maxout(width, width * 4, pieces=3)),
+                     column=cols.index(ORTH),
+                 )
+-        elif subword_features:
+-            embed = uniqued(
+-                (norm | prefix | suffix | shape)
+-                >> LN(Maxout(width, width * 4, pieces=3)),
+-                column=cols.index(ORTH),
+-            )
++
+         else:
+             embed = norm
+ 
+@@ -431,6 +477,8 @@ def get_col(idx):
+ 
+ 
+ def doc2feats(cols=None):
++    print("in doc2feats")
++    exit()
+     if cols is None:
+         cols = [ID, NORM, PREFIX, SUFFIX, SHAPE, ORTH]
+ 
+diff --git a/spacy/attrs.pyx b/spacy/attrs.pyx
+index ed1f39a3..942e5487 100644
+--- a/spacy/attrs.pyx
++++ b/spacy/attrs.pyx
+@@ -131,7 +131,7 @@ def intify_attrs(stringy_attrs, strings_map=None, _do_deprecated=False):
+             'NumValue', 'PartType', 'Polite', 'StyleVariant',
+             'PronType', 'AdjType', 'Person', 'Variant', 'AdpType',
+             'Reflex', 'Negative', 'Mood', 'Aspect', 'Case',
+-            'Polarity', 'PrepCase', 'Animacy' # U20
++            'Polarity', 'PrepCase', 'Animacy'  # U20
+         ]
+         for key in morph_keys:
+             if key in stringy_attrs:
+diff --git a/spacy/cli/train.py b/spacy/cli/train.py
+index 63c6242d..7cbf396c 100644
+--- a/spacy/cli/train.py
++++ b/spacy/cli/train.py
+@@ -22,9 +22,12 @@ from .. import about
+ 
+ @plac.annotations(
+     lang=("Model language", "positional", None, str),
+-    output_path=("Output directory to store model in", "positional", None, Path),
+-    train_path=("Location of JSON-formatted training data", "positional", None, Path),
+-    dev_path=("Location of JSON-formatted development data", "positional", None, Path),
++    output_path=("Output directory to store model in",
++                 "positional", None, Path),
++    train_path=("Location of JSON-formatted training data",
++                "positional", None, Path),
++    dev_path=("Location of JSON-formatted development data",
++              "positional", None, Path),
+     raw_text=(
+         "Path to jsonl file with unlabelled text documents.",
+         "option",
+@@ -32,7 +35,8 @@ from .. import about
+         Path,
+     ),
+     base_model=("Name of model to update (optional)", "option", "b", str),
+-    pipeline=("Comma-separated names of pipeline components", "option", "p", str),
++    pipeline=("Comma-separated names of pipeline components",
++              "option", "p", str),
+     vectors=("Model to load vectors from", "option", "v", str),
+     n_iter=("Number of iterations", "option", "n", int),
+     n_early_stopping=(
+@@ -44,7 +48,8 @@ from .. import about
+     n_examples=("Number of examples", "option", "ns", int),
+     use_gpu=("Use GPU", "option", "g", int),
+     version=("Model version", "option", "V", str),
+-    meta_path=("Optional path to meta.json to use as base.", "option", "m", Path),
++    meta_path=("Optional path to meta.json to use as base.",
++               "option", "m", Path),
+     init_tok2vec=(
+         "Path to pretrained weights for the token-to-vector parts of the models. See 'spacy pretrain'. Experimental.",
+         "option",
+@@ -63,10 +68,12 @@ from .. import about
+         "et",
+         str,
+     ),
+-    noise_level=("Amount of corruption for data augmentation", "option", "nl", float),
++    noise_level=("Amount of corruption for data augmentation",
++                 "option", "nl", float),
+     eval_beam_widths=("Beam widths to evaluate, e.g. 4,8", "option", "bw", str),
+     gold_preproc=("Use gold preprocessing", "flag", "G", bool),
+-    learn_tokens=("Make parser learn gold-standard tokenization", "flag", "T", bool),
++    learn_tokens=("Make parser learn gold-standard tokenization",
++                  "flag", "T", bool),
+     verbose=("Display more information for debug", "flag", "VV", bool),
+     debug=("Run data diagnostics before training", "flag", "D", bool),
+ )
+@@ -187,7 +194,8 @@ def train(
+         _load_vectors(nlp, vectors)
+ 
+     # Multitask objectives
+-    multitask_options = [("parser", parser_multitasks), ("ner", entity_multitasks)]
++    multitask_options = [("parser", parser_multitasks),
++                         ("ner", entity_multitasks)]
+     for pipe_name, multitasks in multitask_options:
+         if multitasks:
+             if pipe_name not in pipeline:
+@@ -209,7 +217,8 @@ def train(
+         optimizer = create_default_optimizer(Model.ops)
+     else:
+         # Start with a blank model, call begin_training
+-        optimizer = nlp.begin_training(lambda: corpus.train_tuples, device=use_gpu)
++        optimizer = nlp.begin_training(
++            lambda: corpus.train_tuples, device=use_gpu)
+ 
+     nlp._optimizer = None
+ 
+@@ -219,12 +228,14 @@ def train(
+         msg.text("Loaded pretrained tok2vec for: {}".format(components))
+ 
+     # fmt: off
+-    row_head = ["Itn", "Dep Loss", "NER Loss", "UAS", "NER P", "NER R", "NER F", "Tag %", "Token %", "CPU WPS", "GPU WPS"]
++    row_head = ["Itn", "Dep Loss", "NER Loss", "UAS", "NER P",
++                "NER R", "NER F", "Tag %", "Token %", "CPU WPS", "GPU WPS"]
+     row_widths = [3, 10, 10, 7, 7, 7, 7, 7, 7, 7, 7]
+     if has_beam_widths:
+         row_head.insert(1, "Beam W.")
+         row_widths.insert(1, 7)
+-    row_settings = {"widths": row_widths, "aligns": tuple(["r" for i in row_head]), "spacing": 2}
++    row_settings = {"widths": row_widths, "aligns": tuple(
++        ["r" for i in row_head]), "spacing": 2}
+     # fmt: on
+     print("")
+     msg.row(row_head, **row_settings)
+@@ -285,12 +296,14 @@ def train(
+                     else:
+                         gpu_wps = nwords / (end_time - start_time)
+                         with Model.use_device("cpu"):
+-                            nlp_loaded = util.load_model_from_path(epoch_model_path)
++                            nlp_loaded = util.load_model_from_path(
++                                epoch_model_path)
+                             for name, component in nlp_loaded.pipeline:
+                                 if hasattr(component, "cfg"):
+                                     component.cfg["beam_width"] = beam_width
+                             dev_docs = list(
+-                                corpus.dev_docs(nlp_loaded, gold_preproc=gold_preproc)
++                                corpus.dev_docs(
++                                    nlp_loaded, gold_preproc=gold_preproc)
+                             )
+                             start_time = timer()
+                             scorer = nlp_loaded.evaluate(dev_docs)
+@@ -364,7 +377,8 @@ def train(
+             nlp.to_disk(final_model_path)
+         msg.good("Saved model to output directory", final_model_path)
+         with msg.loading("Creating best model..."):
+-            best_model_path = _collate_best_model(meta, output_path, nlp.pipe_names)
++            best_model_path = _collate_best_model(
++                meta, output_path, nlp.pipe_names)
+         msg.good("Created best model", best_model_path)
+ 
+ 
+@@ -439,7 +453,8 @@ def _find_best(experiment_dir, component):
+     for epoch_model in experiment_dir.iterdir():
+         if epoch_model.is_dir() and epoch_model.parts[-1] != "model-final":
+             accs = srsly.read_json(epoch_model / "accuracy.json")
+-            scores = [accs.get(metric, 0.0) for metric in _get_metrics(component)]
++            scores = [accs.get(metric, 0.0)
++                      for metric in _get_metrics(component)]
+             accuracies.append((scores, epoch_model))
+     if accuracies:
+         return max(accuracies)[1]
+diff --git a/spacy/lang/lex_attrs.py b/spacy/lang/lex_attrs.py
+index 7c0ed8a0..330f2e4f 100644
+--- a/spacy/lang/lex_attrs.py
++++ b/spacy/lang/lex_attrs.py
+@@ -3,11 +3,13 @@ from __future__ import unicode_literals
+ 
+ import unicodedata
+ import re
++from sklearn.metrics.pairwise import cosine_similarity
+ 
+ from .. import attrs
+ 
+ 
+-_like_email = re.compile(r"([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)").match
++_like_email = re.compile(
++    r"([a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+)").match
+ _tlds = set(
+     "com|org|edu|gov|net|mil|aero|asia|biz|cat|coop|info|int|jobs|mobi|museum|"
+     "name|pro|tel|travel|xxx|ac|ad|ae|af|ag|ai|al|am|an|ao|aq|ar|as|at|au|aw|"
+@@ -226,6 +228,30 @@ def get_prob(string):
+     return -20.0
+ 
+ 
++def sem_diff(string, **kwargs):
++    d = kwargs.get("d", None)
++    if d is None:
++        return -20.0
++    df = d["df"]
++    per_emb = d["per_emb"]
++    loc_emb = d["loc_emb"]
++    if df is None or per_emb is None or loc_emb is None:
++        print("bad")
++        return -20.0
++    string = string.lower()
++    try:
++        emb = df.loc[[string], :].values[0][1:]
++    except KeyError:
++        emb = []
++    if len(emb) is 0:
++        return 0
++    per = cosine_similarity(emb.reshape(
++        1, -1), per_emb.reshape(1, -1))[0][0]
++    loc = cosine_similarity(emb.reshape(
++        1, -1), loc_emb.reshape(1, -1))[0][0]
++    return per - loc
++
++
+ LEX_ATTRS = {
+     attrs.LOWER: lower,
+     attrs.NORM: lower,
+@@ -240,7 +266,8 @@ LEX_ATTRS = {
+     attrs.IS_UPPER: is_upper,
+     attrs.IS_STOP: is_stop,
+     attrs.IS_OOV: is_oov,
+-    attrs.PROB: get_prob,
++    attrs.PROB: sem_diff,
++    # attrs.PROB: get_prob,
+     attrs.LIKE_EMAIL: like_email,
+     attrs.LIKE_NUM: like_num,
+     attrs.IS_PUNCT: is_punct,
+@@ -252,4 +279,6 @@ LEX_ATTRS = {
+     attrs.IS_RIGHT_PUNCT: is_right_punct,
+     attrs.IS_CURRENCY: is_currency,
+     attrs.LIKE_URL: like_url,
++
++
+ }
+diff --git a/spacy/language.py b/spacy/language.py
+index 6bd21b0b..33876f35 100644
+--- a/spacy/language.py
++++ b/spacy/language.py
+@@ -10,6 +10,7 @@ from contextlib import contextmanager
+ from copy import copy, deepcopy
+ from thinc.neural import Model
+ import srsly
++import pandas as pd
+ 
+ from .tokenizer import Tokenizer
+ from .vocab import Vocab
+@@ -22,12 +23,12 @@ from .compat import izip, basestring_
+ from .gold import GoldParse
+ from .scorer import Scorer
+ from ._ml import link_vectors_to_models, create_default_optimizer
+-from .attrs import IS_STOP
++from .attrs import IS_STOP, PROB
+ from .lang.punctuation import TOKENIZER_PREFIXES, TOKENIZER_SUFFIXES
+ from .lang.punctuation import TOKENIZER_INFIXES
+ from .lang.tokenizer_exceptions import TOKEN_MATCH
+ from .lang.tag_map import TAG_MAP
+-from .lang.lex_attrs import LEX_ATTRS, is_stop
++from .lang.lex_attrs import LEX_ATTRS, is_stop, sem_diff
+ from .errors import Errors, Warnings, deprecation_warning
+ from . import util
+ from . import about
+@@ -41,7 +42,9 @@ class BaseDefaults(object):
+         )
+ 
+     @classmethod
+-    def create_vocab(cls, nlp=None):
++    def create_vocab(cls, nlp=None, **kwargs):
++        print("Creating Vocab object...")
++        use_sem_diff = kwargs.get("sem_diff", False)
+         lemmatizer = cls.create_lemmatizer(nlp)
+         lex_attr_getters = dict(cls.lex_attr_getters)
+         # This is messy, but it's the minimal working fix to Issue #639.
+@@ -50,6 +53,7 @@ class BaseDefaults(object):
+             lex_attr_getters=lex_attr_getters,
+             tag_map=cls.tag_map,
+             lemmatizer=lemmatizer,
++            use_sem_diff=use_sem_diff
+         )
+         for tag_str, exc in cls.morph_rules.items():
+             for orth_str, attrs in exc.items():
+diff --git a/spacy/lexeme.pxd b/spacy/lexeme.pxd
+index 048f8016..5124c10b 100644
+--- a/spacy/lexeme.pxd
++++ b/spacy/lexeme.pxd
+@@ -12,35 +12,35 @@ from numpy cimport ndarray
+ cdef LexemeC EMPTY_LEXEME
+ 
+ cdef class Lexeme:
+-    cdef LexemeC* c
++    cdef LexemeC * c
+     cdef readonly Vocab vocab
+     cdef readonly attr_t orth
+ 
+     @staticmethod
+-    cdef inline Lexeme from_ptr(LexemeC* lex, Vocab vocab, int vector_length):
++    cdef inline Lexeme from_ptr(LexemeC * lex, Vocab vocab, int vector_length):
+         cdef Lexeme self = Lexeme.__new__(Lexeme, vocab, lex.orth)
+         self.c = lex
+         self.vocab = vocab
+         self.orth = lex.orth
+ 
+     @staticmethod
+-    cdef inline SerializedLexemeC c_to_bytes(const LexemeC* lex) nogil:
++    cdef inline SerializedLexemeC c_to_bytes(const LexemeC * lex) nogil:
+         cdef SerializedLexemeC lex_data
+-        buff = <const unsigned char*>&lex.flags
+-        end = <const unsigned char*>&lex.sentiment + sizeof(lex.sentiment)
++        buff = <const unsigned char * > & lex.flags
++        end = <const unsigned char * > & lex.sentiment + sizeof(lex.sentiment)
+         for i in range(sizeof(lex_data.data)):
+             lex_data.data[i] = buff[i]
+         return lex_data
+ 
+     @staticmethod
+-    cdef inline void c_from_bytes(LexemeC* lex, SerializedLexemeC lex_data) nogil:
+-        buff = <unsigned char*>&lex.flags
+-        end = <unsigned char*>&lex.sentiment + sizeof(lex.sentiment)
++    cdef inline void c_from_bytes(LexemeC * lex, SerializedLexemeC lex_data) nogil:
++        buff = <unsigned char * > & lex.flags
++        end = <unsigned char * > & lex.sentiment + sizeof(lex.sentiment)
+         for i in range(sizeof(lex_data.data)):
+             buff[i] = lex_data.data[i]
+ 
+     @staticmethod
+-    cdef inline void set_struct_attr(LexemeC* lex, attr_id_t name, attr_t value) nogil:
++    cdef inline void set_struct_attr(LexemeC * lex, attr_id_t name, attr_t value) nogil:
+         if name < (sizeof(flags_t) * 8):
+             Lexeme.c_set_flag(lex, name, value)
+         elif name == ID:
+@@ -61,7 +61,7 @@ cdef class Lexeme:
+             lex.lang = value
+ 
+     @staticmethod
+-    cdef inline attr_t get_struct_attr(const LexemeC* lex, attr_id_t feat_name) nogil:
++    cdef inline attr_t get_struct_attr(const LexemeC * lex, attr_id_t feat_name) nogil:
+         if feat_name < (sizeof(flags_t) * 8):
+             if Lexeme.c_check_flag(lex, feat_name):
+                 return 1
+@@ -91,7 +91,7 @@ cdef class Lexeme:
+             return 0
+ 
+     @staticmethod
+-    cdef inline bint c_check_flag(const LexemeC* lexeme, attr_id_t flag_id) nogil:
++    cdef inline bint c_check_flag(const LexemeC * lexeme, attr_id_t flag_id) nogil:
+         cdef flags_t one = 1
+         if lexeme.flags & (one << flag_id):
+             return True
+@@ -99,7 +99,7 @@ cdef class Lexeme:
+             return False
+ 
+     @staticmethod
+-    cdef inline bint c_set_flag(LexemeC* lex, attr_id_t flag_id, bint value) nogil:
++    cdef inline bint c_set_flag(LexemeC * lex, attr_id_t flag_id, bint value) nogil:
+         cdef flags_t one = 1
+         if value:
+             lex.flags |= one << flag_id
+diff --git a/spacy/syntax/nn_parser.pyx b/spacy/syntax/nn_parser.pyx
+index a6a47690..c361b2ca 100644
+--- a/spacy/syntax/nn_parser.pyx
++++ b/spacy/syntax/nn_parser.pyx
+@@ -66,11 +66,25 @@ cdef class Parser:
+         hidden_width = util.env_opt('hidden_width', cfg.get('hidden_width', 64))
+         embed_size = util.env_opt('embed_size', cfg.get('embed_size', 2000))
+         pretrained_vectors = cfg.get('pretrained_vectors', None)
++        tok2vec_args = cfg.get('tok2vec_args', None)
++        dep = False
++        sem_diff = False
++        pretrained_width = 96
++        if tok2vec_args is not None:
++            dep = tok2vec_args['dep']
++            sem_diff = tok2vec_args['sem_diff']
++            static = tok2vec_args['static']
++            subword_features = not static
++            token_vector_width = tok2vec_args['width']
++            pretrained_width = tok2vec_args['pretrained_width']
+         tok2vec = Tok2Vec(token_vector_width, embed_size,
+                           conv_depth=conv_depth,
+                           subword_features=subword_features,
+                           pretrained_vectors=pretrained_vectors,
+-                          bilstm_depth=bilstm_depth)
++                          bilstm_depth=bilstm_depth,
++                          dep=dep,
++                          sem_diff=sem_diff,
++                          pretrained_width=pretrained_width)
+         tok2vec = chain(tok2vec, flatten)
+         tok2vec.nO = token_vector_width
+         lower = PrecomputableAffine(hidden_width,
+@@ -110,6 +124,7 @@ cdef class Parser:
+             in parser.begin_training(), parser.from_disk() or parser.from_bytes().
+         **cfg: Arbitrary configuration parameters. Set to the `.cfg` attribute
+         """
++
+         self.vocab = vocab
+         if moves is True:
+             self.moves = self.TransitionSystem(self.vocab.strings)
+@@ -566,6 +581,7 @@ cdef class Parser:
+                                         **self.cfg.get('optimizer', {}))
+ 
+     def begin_training(self, get_gold_tuples, pipeline=None, sgd=None, **cfg):
++        print('Beginning training for', self.name)
+         if 'model' in cfg:
+             self.model = cfg['model']
+         if not hasattr(get_gold_tuples, '__call__'):
+@@ -582,6 +598,7 @@ cdef class Parser:
+         self.moves.initialize_actions(actions)
+         cfg.setdefault('token_vector_width', 96)
+         if self.model is True:
++            print("Create Parser Model with cfg:", cfg)
+             self.model, cfg = self.Model(self.moves.n_moves, **cfg)
+             if sgd is None:
+                 sgd = self.create_optimizer()
+diff --git a/spacy/util.py b/spacy/util.py
+index 1cea8b6c..71a5d65a 100644
+--- a/spacy/util.py
++++ b/spacy/util.py
+@@ -290,7 +290,8 @@ def get_async(stream, numpy_array):
+     if cupy is None:
+         return numpy_array
+     else:
+-        array = cupy.ndarray(numpy_array.shape, order="C", dtype=numpy_array.dtype)
++        array = cupy.ndarray(numpy_array.shape, order="C",
++                             dtype=numpy_array.dtype)
+         array.set(numpy_array, stream=stream)
+         return array
+ 
+@@ -339,7 +340,8 @@ def compile_prefix_regex(entries):
+         )
+         return re.compile(expression)
+     else:
+-        expression = "|".join(["^" + piece for piece in entries if piece.strip()])
++        expression = "|".join(
++            ["^" + piece for piece in entries if piece.strip()])
+         return re.compile(expression)
+ 
+ 
+@@ -394,10 +396,12 @@ def update_exc(base_exceptions, *addition_dicts):
+     for additions in addition_dicts:
+         for orth, token_attrs in additions.items():
+             if not all(isinstance(attr[ORTH], unicode_) for attr in token_attrs):
+-                raise ValueError(Errors.E055.format(key=orth, orths=token_attrs))
++                raise ValueError(Errors.E055.format(
++                    key=orth, orths=token_attrs))
+             described_orth = "".join(attr[ORTH] for attr in token_attrs)
+             if orth != described_orth:
+-                raise ValueError(Errors.E056.format(key=orth, orths=described_orth))
++                raise ValueError(Errors.E056.format(
++                    key=orth, orths=described_orth))
+         exc.update(additions)
+     exc = expand_exc(exc, "'", "’")
+     return exc
+@@ -684,7 +688,8 @@ def validate_json(data, validator):
+             err_path = ""
+         msg = err.message + " " + err_path
+         if err.context:  # Error has suberrors, e.g. if schema uses anyOf
+-            suberrs = ["  - {}".format(suberr.message) for suberr in err.context]
++            suberrs = ["  - {}".format(suberr.message)
++                       for suberr in err.context]
+             msg += ":\n{}".format("".join(suberrs))
+         errors.append(msg)
+     return errors
+diff --git a/spacy/vocab.pxd b/spacy/vocab.pxd
+index 2e4f3b10..4f8e5860 100644
+--- a/spacy/vocab.pxd
++++ b/spacy/vocab.pxd
+@@ -8,6 +8,7 @@ from .structs cimport LexemeC, TokenC
+ from .typedefs cimport utf8_t, attr_t, hash_t
+ from .strings cimport StringStore
+ from .morphology cimport Morphology
++from pandas import DataFrame
+ 
+ 
+ cdef LexemeC EMPTY_LEXEME
+@@ -26,6 +27,9 @@ cdef struct _Cached:
+ 
+ cdef class Vocab:
+     cdef Pool mem
++    cdef public object df
++    cdef public object per_emb
++    cdef public object loc_emb
+     cpdef readonly StringStore strings
+     cpdef public Morphology morphology
+     cpdef public object vectors
+diff --git a/spacy/vocab.pyx b/spacy/vocab.pyx
+index e64394ee..e44bf914 100644
+--- a/spacy/vocab.pyx
++++ b/spacy/vocab.pyx
+@@ -22,6 +22,8 @@ from .attrs import intify_attrs, NORM
+ from .vectors import Vectors
+ from ._ml import link_vectors_to_models
+ from . import util
++from .lang.lex_attrs import sem_diff
++import pandas as pd
+ 
+ 
+ cdef class Vocab:
+@@ -31,8 +33,9 @@ cdef class Vocab:
+ 
+     DOCS: https://spacy.io/api/vocab
+     """
++
+     def __init__(self, lex_attr_getters=None, tag_map=None, lemmatizer=None,
+-                 strings=tuple(), oov_prob=-20., **deprecated_kwargs):
++                 strings=tuple(), oov_prob=-20., df=None, **deprecated_kwargs):
+         """Create the vocabulary.
+ 
+         lex_attr_getters (dict): A dictionary mapping attribute IDs to
+@@ -59,6 +62,7 @@ cdef class Vocab:
+         self.lex_attr_getters = lex_attr_getters
+         self.morphology = Morphology(self.strings, tag_map, lemmatizer)
+         self.vectors = Vectors()
++        self.df = df
+ 
+     @property
+     def lang(self):
+@@ -72,6 +76,7 @@ cdef class Vocab:
+         the data, we use the vocab.lang property to fetch the Language class.
+         If the Language class is not loaded, an empty dict is returned.
+         """
++
+         def __get__(self):
+             if not util.lang_class_is_loaded(self.lang):
+                 return {}
+@@ -117,16 +122,16 @@ cdef class Vocab:
+         self.lex_attr_getters[flag_id] = flag_getter
+         return flag_id
+ 
+-    cdef const LexemeC* get(self, Pool mem, unicode string) except NULL:
++    cdef const LexemeC * get(self, Pool mem, unicode string) except NULL:
+         """Get a pointer to a `LexemeC` from the lexicon, creating a new
+         `Lexeme` if necessary using memory acquired from the given pool. If the
+         pool is the lexicon's own memory, the lexeme is saved in the lexicon.
+         """
+         if string == "":
+-            return &EMPTY_LEXEME
+-        cdef LexemeC* lex
++            return & EMPTY_LEXEME
++        cdef LexemeC * lex
+         cdef hash_t key = self.strings[string]
+-        lex = <LexemeC*>self._by_orth.get(key)
++        lex = <LexemeC * >self._by_orth.get(key)
+         cdef size_t addr
+         if lex != NULL:
+             assert lex.orth in self.strings
+@@ -137,25 +142,25 @@ cdef class Vocab:
+         else:
+             return self._new_lexeme(mem, string)
+ 
+-    cdef const LexemeC* get_by_orth(self, Pool mem, attr_t orth) except NULL:
++    cdef const LexemeC * get_by_orth(self, Pool mem, attr_t orth) except NULL:
+         """Get a pointer to a `LexemeC` from the lexicon, creating a new
+         `Lexeme` if necessary using memory acquired from the given pool. If the
+         pool is the lexicon's own memory, the lexeme is saved in the lexicon.
+         """
+         if orth == 0:
+-            return &EMPTY_LEXEME
+-        cdef LexemeC* lex
+-        lex = <LexemeC*>self._by_orth.get(orth)
++            return & EMPTY_LEXEME
++        cdef LexemeC * lex
++        lex = <LexemeC * >self._by_orth.get(orth)
+         if lex != NULL:
+             return lex
+         else:
+             return self._new_lexeme(mem, self.strings[orth])
+ 
+-    cdef const LexemeC* _new_lexeme(self, Pool mem, unicode string) except NULL:
++    cdef const LexemeC * _new_lexeme(self, Pool mem, unicode string) except NULL:
+         if len(string) < 3 or self.length < 10000:
+             mem = self.mem
+         cdef bint is_oov = mem is not self.mem
+-        lex = <LexemeC*>mem.alloc(sizeof(LexemeC), 1)
++        lex = <LexemeC * >mem.alloc(sizeof(LexemeC), 1)
+         lex.orth = self.strings.add(string)
+         lex.length = len(string)
+         if self.vectors is not None:
+@@ -168,7 +173,7 @@ cdef class Vocab:
+                 if isinstance(value, unicode):
+                     value = self.strings.add(value)
+                 if attr == PROB:
+-                    lex.prob = value
++                    lex.prob = sem_diff(string, d=self.get_df())
+                 elif value is not None:
+                     Lexeme.set_struct_attr(lex, attr, value)
+         if not is_oov:
+@@ -177,10 +182,22 @@ cdef class Vocab:
+             raise ValueError(Errors.E085.format(string=string))
+         return lex
+ 
+-    cdef int _add_lex_to_vocab(self, hash_t key, const LexemeC* lex) except -1:
+-        self._by_orth.set(lex.orth, <void*>lex)
++    cdef int _add_lex_to_vocab(self, hash_t key, const LexemeC * lex) except -1:
++        self._by_orth.set(lex.orth, < void * >lex)
+         self.length += 1
+ 
++    def get_df(self):
++        if self.df is None:
++            print("get nb df")
++            df = pd.read_csv("./data/embeddings/numberbatch/numberbatch.csv")
++            # print("get glove df")
++            # df = pd.read_csv("./data/embeddings/glove/glove.csv")
++            df = df.set_index(['id'])
++            self.per_emb = df.loc[["person"], :].values[0][1:]
++            self.loc_emb = df.loc[["location"], :].values[0][1:]
++            self.df = df
++        return {"df": self.df, "per_emb": self.per_emb, "loc_emb": self.loc_emb}
++
+     def __contains__(self, key):
+         """Check whether the string or int key has an entry in the vocabulary.
+ 
+@@ -236,15 +253,15 @@ cdef class Vocab:
+             orth = id_or_string
+         return Lexeme(self, orth)
+ 
+-    cdef const TokenC* make_fused_token(self, substrings) except NULL:
++    cdef const TokenC * make_fused_token(self, substrings) except NULL:
+         cdef int i
+-        tokens = <TokenC*>self.mem.alloc(len(substrings) + 1, sizeof(TokenC))
++        tokens = <TokenC * >self.mem.alloc(len(substrings) + 1, sizeof(TokenC))
+         for i, props in enumerate(substrings):
+             props = intify_attrs(props, strings_map=self.strings,
+                                  _do_deprecated=True)
+             token = &tokens[i]
+             # Set the special tokens up to have arbitrary attributes
+-            lex = <LexemeC*>self.get_by_orth(self.mem, props[ORTH])
++            lex = <LexemeC * >self.get_by_orth(self.mem, props[ORTH])
+             token.lex = lex
+             if TAG in props:
+                 self.morphology.assign_tag(token, props[TAG])
+@@ -276,7 +293,7 @@ cdef class Vocab:
+             width = width if width is not None else self.vectors.data.shape[1]
+             self.vectors = Vectors(shape=(self.vectors.shape[0], width))
+ 
+-    def prune_vectors(self, nr_row, batch_size=1024):
++    def prune_vectors(self, nr_row, batch_size=1024, with_keys=True):
+         """Reduce the current vector table to `nr_row` unique entries. Words
+         mapped to the discarded vectors will be remapped to the closest vector
+         among those remaining.
+@@ -314,14 +331,16 @@ cdef class Vocab:
+         keep = xp.ascontiguousarray(self.vectors.data[indices[:nr_row]])
+         toss = xp.ascontiguousarray(self.vectors.data[indices[nr_row:]])
+         self.vectors = Vectors(data=keep, keys=keys)
+-        syn_keys, syn_rows, scores = self.vectors.most_similar(toss, batch_size=batch_size)
++        syn_keys, syn_rows, scores = self.vectors.most_similar(
++            toss, batch_size=batch_size)
+         remap = {}
+-        for i, key in enumerate(keys[nr_row:]):
+-            self.vectors.add(key, row=syn_rows[i])
+-            word = self.strings[key]
+-            synonym = self.strings[syn_keys[i]]
+-            score = scores[i]
+-            remap[word] = (synonym, score)
++        if with_keys:
++            for i, key in enumerate(keys[nr_row:]):
++                self.vectors.add(key, row=syn_rows[i])
++                word = self.strings[key]
++                synonym = self.strings[syn_keys[i]]
++                score = scores[i]
++                remap[word] = (synonym, score)
+         link_vectors_to_models(self)
+         return remap
+ 
+@@ -349,7 +368,7 @@ cdef class Vocab:
+         vectors = numpy.zeros((self.vectors_length,), dtype="f")
+         # Fasttext's ngram computation taken from
+         # https://github.com/facebookresearch/fastText
+-        ngrams_size = 0;
++        ngrams_size = 0
+         for i in range(len(word)):
+             ngram = ""
+             if (word[i] and 0xC0) == 0x80:
+@@ -366,11 +385,12 @@ cdef class Vocab:
+                     j = j + 1
+                 if (n >= minn and not (n == 1 and (i == 0 or j == len(word)))):
+                     if self.strings[ngram] in self.vectors.key2row:
+-                        vectors = numpy.add(self.vectors[self.strings[ngram]],vectors)
++                        vectors = numpy.add(
++                            self.vectors[self.strings[ngram]], vectors)
+                         ngrams_size += 1
+                 n = n + 1
+         if ngrams_size > 0:
+-            vectors = vectors * (1.0/ngrams_size)
++            vectors = vectors * (1.0 / ngrams_size)
+         return vectors
+ 
+     def set_vector(self, orth, vector):
+@@ -385,7 +405,7 @@ cdef class Vocab:
+         if isinstance(orth, basestring_):
+             orth = self.strings.add(orth)
+         if self.vectors.is_full and orth not in self.vectors:
+-            new_rows = max(100, int(self.vectors.shape[0]*1.3))
++            new_rows = max(100, int(self.vectors.shape[0] * 1.3))
+             if self.vectors.shape[1] == 0:
+                 width = vector.size
+             else:
+@@ -506,7 +526,7 @@ cdef class Vocab:
+     def lexemes_to_bytes(self):
+         cdef hash_t key
+         cdef size_t addr
+-        cdef LexemeC* lexeme = NULL
++        cdef LexemeC * lexeme = NULL
+         cdef SerializedLexemeC lex_data
+         cdef int size = 0
+         for key, addr in self._by_orth.items():
+@@ -514,13 +534,13 @@ cdef class Vocab:
+                 continue
+             size += sizeof(lex_data.data)
+         byte_string = b"\0" * size
+-        byte_ptr = <unsigned char*>byte_string
++        byte_ptr = <unsigned char * >byte_string
+         cdef int j
+         cdef int i = 0
+         for key, addr in self._by_orth.items():
+             if addr == 0:
+                 continue
+-            lexeme = <LexemeC*>addr
++            lexeme = <LexemeC * >addr
+             lex_data = Lexeme.c_to_bytes(lexeme)
+             for j in range(sizeof(lex_data.data)):
+                 byte_ptr[i] = lex_data.data[j]
+@@ -529,19 +549,19 @@ cdef class Vocab:
+ 
+     def lexemes_from_bytes(self, bytes bytes_data):
+         """Load the binary vocabulary data from the given string."""
+-        cdef LexemeC* lexeme
++        cdef LexemeC * lexeme
+         cdef hash_t key
+         cdef unicode py_str
+         cdef int i = 0
+         cdef int j = 0
+         cdef SerializedLexemeC lex_data
+         chunk_size = sizeof(lex_data.data)
+-        cdef void* ptr
+-        cdef unsigned char* bytes_ptr = bytes_data
++        cdef void * ptr
++        cdef unsigned char * bytes_ptr = bytes_data
+         for i in range(0, len(bytes_data), chunk_size):
+-            lexeme = <LexemeC*>self.mem.alloc(1, sizeof(LexemeC))
++            lexeme = <LexemeC * >self.mem.alloc(1, sizeof(LexemeC))
+             for j in range(sizeof(lex_data.data)):
+-                lex_data.data[j] = bytes_ptr[i+j]
++                lex_data.data[j] = bytes_ptr[i + j]
+             Lexeme.c_from_bytes(lexeme, lex_data)
+             prev_entry = self._by_orth.get(lexeme.orth)
+             if prev_entry != NULL:
