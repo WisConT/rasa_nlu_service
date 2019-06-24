@@ -22,37 +22,17 @@ dirname = os.path.dirname(__file__)
 nlu_data_dir = os.path.join(dirname, '../../data/processed')
 nlu_resources_dir = os.path.join(dirname, './resources')
 
+classifications = ["per", "loc", "o"]
+
 all_onto_labels = ["gpe", "loc", "fac", "org", "norp", "work_of_art", "person", "product", "event",
                    "law", "language", "date", "time", "percent", "money", "quantity", "ordinal", "cardinal", "o"]
 all_conll_labels = ["per", "org", "loc", "misc", "o"]
 
 
 conll_labels = ["per", "loc", "o"]
-onto_labels = ["person", "loc", "o"]
+onto_labels = ["per", "loc", "o"]
 neel_labels = ["person\n", "location\n", "o"]
 wnut_labels = ["person", "location", "o"]
-
-wnut_mappings = {
-    "gpe": "location",
-    "loc": "location",
-    "fac": "location",
-    "org": "corporation",
-    "norp": "group",
-    "work_of_art": "creative-work",
-    "person": "person",
-    "product": "product",
-    "event": "o",
-    "law": "o",
-    "language": "o",
-    "date": "o",
-    "time": "o",
-    "percent": "o",
-    "money": "o",
-    "quantity": "o",
-    "ordinal": "o",
-    "cardinal": "o",
-    "o": "o"
-}
 
 onto_mappings = {
     "gpe": ["loc"],
@@ -76,34 +56,50 @@ onto_mappings = {
     "o": ["o"]
 }
 
-conll_mappings = {
-    "gpe": ["loc"],
-    "loc": ["loc"],
-    "fac": ["o"],
-    "org": ["org"],
-    "norp": ["o"],
-    "work_of_art": ["o"],
-    "person": ["per"],
-    "product": ["o"],
-    "event": ["o"],
-    "law": ["o"],
-    "language": ["o"],
-    "date": ["o"],
-    "time": ["o"],
-    "percent": ["o"],
-    "money": ["o"],
-    "quantity": ["o"],
-    "ordinal": ["o"],
-    "cardinal": ["o"],
+neel_mappings = {
+    "person\n": ["per"],
+    "location\n": ["loc"],
+    "thing\n": ["o"],
+    "product\n": ["o"],
+    "organization\n": ["o"],
+    "event\n": ["o"],
     "o": ["o"]
 }
 
-neel_mappings = copy.deepcopy(conll_mappings)
-neel_mappings["person"] = ["person\n"]
-neel_mappings["gpe"] = ["location\n"]
-neel_mappings["loc"] = ["location\n"]
-neel_mappings["fac"] = ["location\n"]
-neel_mappings["org"] = ["org\n"]
+wnut_mappings = {
+    "person": ["per"],
+    "group": ["o"],
+    "location": ["loc"],
+    "creative-work": ["o"],
+    "corporation": ["o"],
+    "product": ["o"],
+    "o": ["o"]
+}
+
+newsreader_mappings = {
+    "per": ["per"],
+    "org": ["o"],
+    "loc": ["loc"],
+    "pro": ["o"],
+    "fin": ["o"],
+    "mix": ["o"],
+    "o": ["o"]
+}
+
+conll_mappings = {
+    "per": ["per"],
+    "org": ["o"],
+    "loc": ["loc"],
+    "misc": ["o"],
+    "o": ["o"]
+}
+
+# neel_mappings = copy.deepcopy(conll_mappings)
+# neel_mappings["person"] = ["person\n"]
+# neel_mappings["gpe"] = ["location\n"]
+# neel_mappings["loc"] = ["location\n"]
+# neel_mappings["fac"] = ["location\n"]
+# neel_mappings["org"] = ["org\n"]
 
 conll_to_wnut_mappings = {
     "per": ["person"],
@@ -194,14 +190,14 @@ def align_all_predictions(targets, predictions, tokens):
     return prediction_per_document, concat_targets, concat_predictions
 
 
-def get_statistics(json_per_document, concat_targets, concat_predictions, labels, mapping):
+def get_statistics(json_per_document, concat_targets, concat_predictions, pred_mapping, target_mapping):
     from sklearn.metrics import precision_recall_fscore_support as pr
-    if mapping is None:
-        prec, rec, f1, _ = pr([p.lower() for p in concat_predictions],
-                              [t.lower() for t in concat_targets], labels=labels)
-    else:
-        prec, rec, f1, _ = pr([mapping[p.lower()] for p in concat_predictions],
-                              [t.lower() for t in concat_targets], labels=labels)
+    # if mapping is None:
+    #     prec, rec, f1, _ = pr([p.lower() for p in concat_predictions],
+    #                           [t.lower() for t in concat_targets], labels=labels)
+    # else:
+    prec, rec, f1, _ = pr([pred_mapping[p.lower()] for p in concat_predictions],
+                          [target_mapping["o" if t.isdigit() else t.lower()] for t in concat_targets], labels=classifications)
     # prec, rec, f1, _ = pr([p.lower() for p in concat_predictions],
     #                       [wnut_mappings[t.lower()] for t in concat_targets], labels=wnut_labels)
 
@@ -233,17 +229,14 @@ def evaluate_test_data(interpreter, test_data, dataset_name):
         entity_targets, entity_predictions, tokens)
 
     if dataset_name == "onto5":
-        mapping = onto_mappings
-        labels = onto_labels
+        pred_mapping = onto_mappings
+        targ_mapping = newsreader_mappings
     elif dataset_name == "conll_2003":
-        # mapping = conll_to_wnut_mappings
-        # labels = wnut_labels
-        mapping = None
-        labels = conll_labels
-    elif dataset_name == "wnut_2017":
-        labels = wnut_labels
+        pred_mapping = conll_mappings
+        targ_mapping = wnut_mappings
 
-    statistics = get_statistics(per_document, all_t, all_p, labels, mapping)
+    statistics = get_statistics(
+        per_document, all_t, all_p, pred_mapping, targ_mapping)
     # err = 1 - sum([aligned_predictions[i]["match_cat"]
     #    for i in range(0, len(aligned_predictions))])/len(aligned_predictions)
 

@@ -102,39 +102,6 @@ def parse_dir(dir_name, examples):
         parse_newsreader_xml(Path(dir_name)/xml, examples)
 
 
-def get_sf_stats(data, examples):
-    remove_sfs = []
-    print("All sf: ", len(data))
-    for sf in data.keys():
-        if all([sf.lower() not in [ent["value"].lower() for ent in ex["entities"]] for ex in examples]):
-            remove_sfs.append(sf)
-
-    for sf in sorted(remove_sfs, reverse=True):
-        del data[sf]
-
-    print("Present sf: ", len(data))
-
-    total = 0
-    number_of_resources = {}
-    link_combo_frequency = {}
-    for item in data:
-        total = +1
-        if len(data[item]) in number_of_resources:
-            number_of_resources[len(
-                data[item])] = number_of_resources[len(data[item])] + 1
-        else:
-            number_of_resources[len(data[item])] = 1
-
-    meanings = 0
-    forms = 0
-    confus_data = []
-    for i in number_of_resources:
-        print(i, number_of_resources[i])
-        for x in range(0, int(number_of_resources[i])):
-            confus_data.append(int(i))
-    return confus_data
-
-
 def main():
     examples = []
     for d in os.listdir(newsreader_dir):

@@ -9,6 +9,8 @@ import os
 from pathlib import Path
 import time
 
+# NOTE: Ideas from https://github.com/israkir/conceptnet5-client/tree/master/conceptnet5_client/utils
+
 dirname = os.path.dirname(__file__)
 stats_per_sf_dir = os.path.join(
     dirname, '../../data/processed/surface_form_stats')
@@ -30,15 +32,19 @@ class Search:
             query_args[key] = value
         self.encoded_query_args = urllib.parse.urlencode(query_args)
 
-    def search(self):
+    def search(self, count=0):
         url = ''.join(['%s%s' % ("http://api.conceptnet.io/search", '?')]
                       ) + self.encoded_query_args
+        if count > 3:
+            print("TOO MANY HTTPERRORS")
+            exit()
         try:
             json_data = make_http_request(url)
-            time.sleep(0.5)
+            time.sleep(0.5 + count * 30)
         except HTTPError as e:
             print("HTTPERROR", e)
-            exit()
+            time.sleep(60 * 10)
+            return self.search(count=count+1)
         return json_data
 
 
@@ -60,7 +66,7 @@ def main(test_data_path=None):
     for idx, val in enumerate(entity_values):
         if idx % 100 == 0:
             print(idx)
-        search = Search(node="/c/en/" + val.replace(" ", "_"), rel="/r/IsA")
+        search = Search(start="/c/en/" + val.replace(" ", "_"), rel="/r/IsA")
         data = search.search()
         count = len(data["edges"])
         if count == 0:

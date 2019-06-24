@@ -9,9 +9,11 @@ import copy
 import plac
 
 dirname = os.path.dirname(__file__)
-data_processed_dir = os.path.join(dirname, '../../data/processed')
+data_processed_dir = os.path.join(dirname, '../../../data/processed')
 stats_per_sf_dir = os.path.join(
-    dirname, '../../data/external/stats_per_surface_form')
+    dirname, '../../../data/external/stats_per_surface_form')
+
+# NOTE: get_stats_per_sf taken from https://github.com/dbpedia-spotlight/evaluation-datasets/tree/master/scripts
 
 
 def get_stats_per_sf(name):

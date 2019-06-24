@@ -1,3 +1,6 @@
+import features.conceptnet.utils as cn
+import data.make_embeddings_csv_numberbatch as nb
+import spacy
 import typing
 from typing import Any, Dict, List, Text
 from rasa_nlu.extractors import EntityExtractor
@@ -7,22 +10,18 @@ import sys
 from rasa_nlu.components import Component
 from rasa_nlu import utils
 from rasa_nlu.model import Metadata
-import spacy
 
 dirname = os.path.dirname(__file__)  # NOQA: E402
 filename = os.path.join(dirname, '../../')  # NOQA: E402
 sys.path.append(filename)  # NOQA: E402
 
-import data.make_embeddings_csv_numberbatch as nb
-import features.conceptnet.utils as cn
-
-import nltk
-from nltk.classify import NaiveBayesClassifier
 
 SIMILARITY_MODEL_FILE_NAME = "similarity_classifier.pkl"
 
 if typing.TYPE_CHECKING:
     from spacy.tokens.doc import Doc
+
+# NOTE: Code taken and changed from https://github.com/RasaHQ/rasa/blob/master/rasa/nlu/extractors/spacy_entity_extractor.py
 
 
 class SpacyNBEntityExtractor(EntityExtractor):
@@ -40,16 +39,16 @@ class SpacyNBEntityExtractor(EntityExtractor):
 
     def __init__(self, component_config: Text = None) -> None:
         self.nlp = spacy.load(
-            # './models/pipeline/onto5/numberbatch/nb_onto5_large_vec300_proj96_model/')
-            # './models/pipeline/en_sm/sm_onto5_large_sem_diff/')
-            # './models/pipeline/conll_2003/numberbatch/nb_conll_large_sem_diff/61')
-            './models/pipeline/conll_2003/numberbatch/nb_conll_large/75')
+            './models/pipeline/onto5/en_lg/lg_onto5_large_pruned_sem_diff')
+        # './models/pipeline/onto5/en_md/test')
+        # './models/pipeline/onto5/numberbatch/nb_onto5_large_vec300_proj96_sem_diff_model')
+        # './models/pipeline/conll_2003/numberbatch/nb_conll_large_sem_diff/61')
+        # './models/pipeline/conll_2003/numberbatch/nb_conll_large/')
         # './models/pipeline/conll_2003/en_lg/en_lg_conll_pruned_sem_diff/')
         super(SpacyNBEntityExtractor, self).__init__(component_config)
 
+    # NOTE: from SpacyEntityExtractor.process
     def process(self, message: Message, **kwargs: Any) -> None:
-        # can't use the existing doc here (spacy_doc on the message)
-        # because tokens are lower cased which is bad for NER
         spacy_nlp = self.nlp
         doc = spacy_nlp(message.text)
         all_extracted = self.add_extractor_name(self.extract_entities(doc))
@@ -61,6 +60,7 @@ class SpacyNBEntityExtractor(EntityExtractor):
             "entities", message.get("entities", []) + all_extracted, add_to_output=True
         )
 
+    # NOTE: from SpacyEntityExtractor.extract_entities
     @staticmethod
     def extract_entities(doc: "Doc") -> List[Dict[Text, Any]]:
         entities = [
@@ -75,10 +75,9 @@ class SpacyNBEntityExtractor(EntityExtractor):
         ]
         return entities
 
+    # NOTE: from SpacyEntityExtractor.filter_irrelevant_entities
     @staticmethod
     def filter_irrelevant_entities(extracted, requested_dimensions):
-        """Only return dimensions the user configured"""
-
         if requested_dimensions:
             return [entity
                     for entity in extracted

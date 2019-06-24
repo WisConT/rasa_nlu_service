@@ -1,17 +1,4 @@
-#!/usr/bin/env python
-# coding: utf8
-"""Example of training spaCy's named entity recognizer, starting off with an
-existing model or a blank model.
-
-For more details, see the documentation:
-* Training: https://spacy.io/usage/training
-* NER: https://spacy.io/usage/linguistic-features#named-entities
-
-Compatible with: spaCy v2.0.0+
-Last tested with: v2.1.0
-"""
 from __future__ import unicode_literals, print_function, division
-
 import plac
 import random
 from pathlib import Path
@@ -25,6 +12,8 @@ from rasa_nlu.training_data import load_data
 import os
 import numpy as np
 import pandas as pd
+
+# NOTE: repurposed from example at https://spacy.io/usage/examples#training-ner
 
 dirname = os.path.dirname(__file__)
 nlu_data_dir = os.path.join(dirname, '../../../data/processed')
@@ -61,18 +50,6 @@ def evaluate(nlp, dev_sents):
     return scorer.scores, np.reciprocal(scorer.scores['ents_f'])
 
 
-# def report_scores(loss, scores):
-#     """
-#     prints precision recall and f_measure
-#     :param scores:
-#     :return:
-#     """
-#     precision = '%.2f' % scores['ents_p']
-#     recall = '%.2f' % scores['ents_r']
-#     f_measure = '%.2f' % scores['ents_f']
-#     # print('%s %s %s %s' % (loss, precision, recall, f_measure))
-
-
 def rasa_data_to_spacy_data(rasa_data, spacy_data):
     for m in rasa_data.training_examples:
         if not ("entities" in m.data):
@@ -90,7 +67,7 @@ def rasa_data_to_spacy_data(rasa_data, spacy_data):
     valid_data_path=("Validation data", "option", "vd", str),
     extra_feature=("Extra feature", "option", "ef", str)
 )
-def main(model=None, output_dir=None, training_data_path=None, valid_data_path=None, n_iter=100, extra_feature="shape"):
+def main(model=None, output_dir=None, training_data_path=None, valid_data_path=None, n_iter=1, extra_feature="shape"):
     train_loss = []
     valid_loss = []
     train_data = load_data(training_data_path)
@@ -105,6 +82,10 @@ def main(model=None, output_dir=None, training_data_path=None, valid_data_path=N
     elif extra_feature == "sem_diff":
         tok2vec_args = {'dep': False, 'sem_diff': True,
                         'width': 96, 'static': False, 'pretrained_width': 300}
+    elif extra_feature == "test":
+        print("TEST")
+        tok2vec_args = {'dep': False, 'sem_diff': False,
+                        'width': 96, 'static': True, 'pretrained_width': 300}
 
         # train_data, test_data = data.train_test_split(train_frac=0.9)  # 0.9
         # valid_data, _ = test_data.train_test_split(train_frac=1)  # 1
@@ -132,6 +113,8 @@ def main(model=None, output_dir=None, training_data_path=None, valid_data_path=N
         print("en_core_web_sm model loaded")
     elif model == "en_lg_prune":
         nlp = Language().from_disk('./models/language/pruned_lg')
+    elif model == "en_md_prune":
+        nlp = Language().from_disk('./models/language/pruned_md')
     else:
         print("Unsupported language model")
         exit()
