@@ -89,7 +89,7 @@ def evaluate_results(data_path):
 
 def evaluate_results_dual():
     df_flair = get_formatted_data("results/onto_uncased_glove_flair.json")
-    df_spacy = get_formatted_data("../spacy/results/onto_uncased_entity_specific.json")
+    df_spacy = get_formatted_data("../spacy/results/onto_uncased_spacy_en_core_web_lg.json")
     # df_spacy_sm = get_formatted_data("../spacy/results/onto_uncased_spacy_en_core_web_sm.json")
 
     avg_flair = df_flair['f1']['corpus_average']
@@ -127,7 +127,7 @@ if __name__ == "__main__":
     dirname = os.path.dirname(__file__)
     model_path = os.path.join(dirname, '../../../../models/flair/onto_uncased/glove_flair_embeddings/best-model.pt')
 
-    calculate_test_results(model_path, "results/onto_uncased_flair_fast.json", True)
+    # calculate_test_results(model_path, "results/onto_uncased_flair_fast.json", True)
     # calculate_test_results(model_path, "results/onto_uncased_glove_flair.json", False)
     # evaluate_results('results/onto_uncased_glove_flair.json')
-    # evaluate_results_dual()
+    evaluate_results_dual()

@@ -50,23 +50,15 @@ def evaluate_results():
     # print("corpus total (flair): " + str(avg_flair))
     # print("corpus total (spacy): " + str(avg_spacy))
 
-    # df = pd.DataFrame({
-    #     'lab': ['spaCy - Custom Trained', 'spaCy - en_core_web_lg', 'Flair - Fast', 'Flair - Onto Notes'],
-    #     'val': [0.003, 0.010, 0.150, 0.468]
-    # })
-    # df = pd.DataFrame({
-    #     'lab': ['spaCy - Custom Trained', 'Flair - Fast', 'Flair - Onto Notes'],
-    #     'val': [7.61, 69.73, 142.46]
-    # })
     df = pd.DataFrame({
-        'lab': ['spaCy - en_core_web_sm', 'spaCy - en_core_web_lg', 'spaCy - Custom Trained (uncased)', 'Flair - Fast', 'Flair - Onto Notes'],
-        'val': [60.12, 69.15, 30.21, 67.21, 78.90]
+        'lab': ['spaCy - Custom Trained', 'Flair-Fast', 'Flair-Crawl'],
+        'val': [7.61, 69.73, 142.46]
     })
 
     ax1 = df.plot.bar(x='lab', y='val')
     # ax1.axhline(y=avg_uncased, color='royalblue', linestyle='--', zorder=0.01, linewidth=1)
     # ax1.axhline(y=avg_cased, color='orangered', linestyle='--', zorder=0.01, linewidth=1)
-    ax1.set(xlabel="Model", ylabel="Micro-F1 score")
+    ax1.set(xlabel="Model", ylabel="Training time (hours)")
     ax1.grid(color='grey', linestyle='--', linewidth=0.5, axis='y')
     ax1.legend([])
 

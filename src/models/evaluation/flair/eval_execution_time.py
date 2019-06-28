@@ -1,4 +1,6 @@
+import os
 import pandas as pd
+import matplotlib.pyplot as plt
 
 def get_formatted_data(results_path):
     dirname = os.path.dirname(__file__)
@@ -46,12 +48,12 @@ def evaluate_results_dual():
     print("corpus total (flair): " + str(avg_flair))
     print("corpus total (spacy): " + str(avg_spacy))
 
-    joined_df = pd.DataFrame({
-        "spaCy": df_spacy_f1,
-        "Flair": df_flair_f1
-    }).sort_values('Flair')
+    df = pd.DataFrame({
+        'lab': ['spaCy - Custom Trained', 'spaCy - en_core_web_lg', 'Flair-Fast', 'Flair-Crawl'],
+        'val': [0.003, 0.010, 0.150, 0.468]
+    })
 
-    ax1 = joined_df.plot.bar()
+    ax1 = df.plot.bar()
     # ax1.axhline(y=avg_uncased, color='royalblue', linestyle='--', zorder=0.01, linewidth=1)
     # ax1.axhline(y=avg_cased, color='orangered', linestyle='--', zorder=0.01, linewidth=1)
     ax1.set(xlabel="Entity", ylabel="F1 score")
@@ -68,7 +70,4 @@ if __name__ == "__main__":
     dirname = os.path.dirname(__file__)
     model_path = os.path.join(dirname, '../../../../models/flair/onto_uncased/glove_flair_embeddings/best-model.pt')
 
-    # calculate_test_results('../../../../models/flair/onto_uncased/glove_flair_embeddings/best-model.pt', "results/onto_uncased_glove_flair.json", False)
-    calculate_test_results(model_path, "results/onto_cased_glove_flair.json", True)
-    # evaluate_results('results/onto_uncased_glove_flair.json')
     # evaluate_results_dual()

@@ -89,8 +89,8 @@ def evaluate_results(data_path):
 
 
 def evaluate_results_dual():
-    df_uncased_model = get_formatted_data("results/onto_uncased_entity_specific.json")
-    df_cased_model = get_formatted_data("results/onto_cased_entity_specific.json")
+    df_uncased_model = get_formatted_data("results/onto_uncased_model_cased_data.json")
+    df_cased_model = get_formatted_data("results/onto_cased_model_uncased_data.json")
 
     avg_uncased = df_uncased_model['f1']['corpus_average']
     df_uncased_f1 = df_uncased_model['f1'].drop('corpus_average')
@@ -102,9 +102,9 @@ def evaluate_results_dual():
     print("corpus total (cased model): " + str(avg_cased))
 
     joined_df = pd.DataFrame({
-        "onto_uncased": df_uncased_f1 * 100,
-        "onto_cased": df_cased_f1 * 100
-    }).sort_values('onto_cased')
+        "Train: Uncased - Test: Cased": df_uncased_f1 * 100,
+        "Train: Cased - Test: Uncased": df_cased_f1 * 100
+    }).sort_values('Train: Uncased - Test: Cased')
 
     ax1 = joined_df.plot.bar()
     # ax1.axhline(y=avg_uncased, color='royalblue', linestyle='--', zorder=0.01, linewidth=1)
